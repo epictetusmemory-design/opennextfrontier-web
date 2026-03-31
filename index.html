@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pathfinder — OpenNextFrontier — Sovereignty by design.</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#0033AD;
+  --blue-warm:#1a45c0;
+  --blue-glow:#3366dd;
+  --blue-pale:#dde5f8;
+  --navy:#00103d;
+  --navy-warm:#04153f;
+  --gold:#c4911a;
+  --gold-light:#e8b84b;
+  --gold-pale:#fdf3dc;
+  --red:#b81818;
+  --white:#ffffff;
+  --warm-white:#fdfaf5;
+  --ink:#0a0a14;
+  --muted:#3a4a72;
+}
+
+html,body{
+  margin:0;padding:0;
+  background:var(--warm-white);
+  font-family:'DM Sans',sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── POSTER ── */
+.poster{
+  width:100%;
+  max-width:900px;
+  margin:0 auto;
+  background:var(--warm-white);
+  position:relative;
+  overflow:hidden;
+}
+
+/* ── TOP STRIPE ── */
+.top-stripe{
+  background:var(--blue);
+  height:6px;
+  width:100%;
+}
+
+/* ── HEADER BAND ── */
+.header-band{
+  background:var(--navy-warm);
+  padding:28px 56px 24px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  position:relative;
+  overflow:hidden;
+}
+.header-band::after{
+  content:'';
+  position:absolute;
+  bottom:-1px;left:0;right:0;height:40px;
+  background:var(--warm-white);
+  clip-path:ellipse(60% 100% at 50% 100%);
+}
+.brand{
+  font-family:'Playfair Display',serif;
+  font-size:15px;
+  font-weight:700;
+  letter-spacing:.25em;
+  text-transform:uppercase;
+  color:var(--white);
+}
+.coming-pill{
+  background:var(--gold);
+  color:var(--white);
+  font-family:'DM Mono',monospace;
+  font-size:11px;
+  letter-spacing:.15em;
+  text-transform:uppercase;
+  padding:6px 16px;
+  font-weight:500;
+  animation:shimmer 3s ease-in-out infinite;
+}
+@keyframes shimmer{0%,100%{background:var(--gold)}50%{background:var(--gold-light)}}
+
+/* ── HERO SECTION ── */
+.hero{
+  padding:56px 56px 40px;
+  text-align:center;
+  position:relative;
+}
+.hero-kicker{
+  font-family:'DM Mono',monospace;
+  font-size:11px;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  color:var(--blue);
+  margin-bottom:20px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+}
+.hero-kicker::before,.hero-kicker::after{
+  content:'';
+  display:block;
+  width:40px;height:1px;
+  background:var(--blue);
+  opacity:.4;
+}
+.hero-headline{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(40px,6vw,76px);
+  font-weight:900;
+  line-height:1.0;
+  letter-spacing:-.02em;
+  color:var(--ink);
+  margin-bottom:24px;
+}
+.hero-headline em{
+  font-style:italic;
+  color:var(--blue);
+}
+.hero-headline .gold{
+  color:var(--gold);
+  font-style:italic;
+}
+.hero-sub{
+  font-size:18px;
+  font-weight:300;
+  color:var(--muted);
+  max-width:560px;
+  margin:0 auto 40px;
+  line-height:1.6;
+}
+
+/* ── DIVIDER ── */
+.divider{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding:0 56px;
+  margin-bottom:40px;
+}
+.divider-line{flex:1;height:1px;background:linear-gradient(to right,transparent,var(--blue-pale),transparent)}
+.divider-ornament{
+  font-size:14px;
+  color:var(--blue);
+  letter-spacing:.3em;
+}
+
+/* ── MANIFESTO BLOCK ── */
+.manifesto{
+  background:var(--navy-warm);
+  margin:0 56px;
+  padding:40px 48px;
+  position:relative;
+  overflow:hidden;
+}
+.manifesto::before{
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;bottom:0;
+  background:repeating-linear-gradient(
+    -45deg,
+    transparent,transparent 30px,
+    rgba(0,51,173,.06) 30px,
+    rgba(0,51,173,.06) 31px
+  );
+}
+.manifesto-glow{
+  position:absolute;
+  bottom:-40px;left:50%;
+  transform:translateX(-50%);
+  width:300px;height:120px;
+  background:radial-gradient(ellipse,rgba(0,80,255,.25) 0%,transparent 70%);
+  pointer-events:none;
+}
+.manifesto > *{position:relative}
+.manifesto-quote{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(20px,3vw,30px);
+  font-weight:700;
+  line-height:1.2;
+  color:var(--white);
+  text-align:center;
+  margin-bottom:20px;
+}
+.manifesto-quote em{
+  font-style:italic;
+  color:#7aaeff;
+}
+.manifesto-rule{
+  width:48px;height:2px;
+  background:var(--gold);
+  margin:0 auto 16px;
+}
+.manifesto-tagline{
+  font-family:'DM Mono',monospace;
+  font-size:11px;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.4);
+  text-align:center;
+}
+
+/* ── THREE COLUMNS ── */
+.three-col{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:20px;
+  padding:40px 56px;
+}
+.col-card{
+  padding:24px 20px;
+  background:var(--white);
+  border:1px solid var(--blue-pale);
+  border-top:3px solid var(--blue);
+  position:relative;
+}
+.col-card.warm{border-top-color:var(--gold)}
+.col-card.strong{
+  background:var(--blue);
+  border-color:var(--blue);
+  border-top-color:#7aaeff;
+}
+.col-icon{font-size:28px;margin-bottom:12px;display:block}
+.col-title{
+  font-family:'Playfair Display',serif;
+  font-size:17px;
+  font-weight:700;
+  color:var(--ink);
+  margin-bottom:8px;
+}
+.col-card.strong .col-title{color:var(--white)}
+.col-body{
+  font-size:12px;
+  color:var(--muted);
+  line-height:1.6;
+}
+.col-card.strong .col-body{color:rgba(255,255,255,.7)}
+
+/* ── TIER STRIP ── */
+.tier-strip{
+  padding:0 56px 40px;
+}
+.tier-strip-label{
+  font-family:'DM Mono',monospace;
+  font-size:10px;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  color:var(--blue);
+  margin-bottom:14px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.tier-strip-label::before{
+  content:'';
+  display:block;
+  width:20px;height:1px;
+  background:var(--blue);
+}
+.tiers{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr 1fr;
+  gap:3px;
+}
+.tier-item{
+  padding:16px 14px;
+  background:var(--white);
+  border:1px solid var(--blue-pale);
+  position:relative;
+}
+.tier-item::before{
+  content:'';
+  display:block;
+  width:100%;height:3px;
+  position:absolute;
+  top:0;left:0;
+  background:var(--blue-pale);
+}
+.tier-item.t1::before{background:var(--blue-pale)}
+.tier-item.t2::before{background:var(--blue)}
+.tier-item.t3::before{background:var(--blue-warm)}
+.tier-item.t4{
+  background:var(--navy-warm);
+  border-color:#1a3080;
+  overflow:hidden;
+}
+.tier-item.t4::before{
+  background:linear-gradient(to right,transparent,var(--gold),transparent);
+  animation:scan 3s ease-in-out infinite;
+}
+@keyframes scan{0%,100%{opacity:.4}50%{opacity:1}}
+.tier-num{
+  font-family:'DM Mono',monospace;
+  font-size:9px;
+  color:var(--blue-pale);
+  letter-spacing:.1em;
+  margin-bottom:4px;
+}
+.tier-item.t4 .tier-num{color:rgba(255,255,255,.25)}
+.tier-title{
+  font-family:'Playfair Display',serif;
+  font-size:15px;
+  font-weight:700;
+  color:var(--ink);
+  margin-bottom:6px;
+}
+.tier-item.t4 .tier-title{
+  color:rgba(255,255,255,.5);
+  font-style:italic;
+}
+.tier-desc{
+  font-size:11px;
+  color:var(--muted);
+  line-height:1.5;
+}
+.tier-item.t4 .tier-desc{color:rgba(255,255,255,.3)}
+.tier-glow-word{
+  font-family:'Playfair Display',serif;
+  font-size:18px;
+  font-style:italic;
+  color:rgba(100,160,255,.5);
+  margin-top:8px;
+  animation:word-pulse 3s ease-in-out infinite;
+}
+@keyframes word-pulse{0%,100%{opacity:.4;color:rgba(100,160,255,.4)}50%{opacity:1;color:rgba(100,200,255,.8)}}
+
+/* ── BOTTOM STATEMENT ── */
+.bottom-statement{
+  background:var(--gold-pale);
+  border-top:2px solid var(--gold);
+  border-bottom:2px solid var(--gold);
+  padding:32px 56px;
+  text-align:center;
+}
+.statement-main{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(22px,3.5vw,36px);
+  font-weight:700;
+  color:var(--ink);
+  margin-bottom:10px;
+}
+.statement-main em{font-style:italic;color:var(--blue)}
+.statement-sub{
+  font-size:13px;
+  color:var(--muted);
+  font-weight:300;
+  max-width:500px;
+  margin:0 auto;
+}
+
+/* ── FOOTER ── */
+.footer{
+  background:var(--navy-warm);
+  padding:20px 56px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.footer-brand{
+  font-family:'Playfair Display',serif;
+  font-size:16px;
+  font-weight:700;
+  color:var(--white);
+}
+.footer-tagline{
+  font-size:11px;
+  color:rgba(255,255,255,.4);
+  margin-top:2px;
+  font-family:'DM Mono',monospace;
+  letter-spacing:.05em;
+}
+.footer-right{
+  font-family:'DM Mono',monospace;
+  font-size:10px;
+  color:rgba(255,255,255,.3);
+  text-align:right;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  line-height:1.8;
+}
+.footer-right .highlight{color:var(--gold-light);opacity:.7}
+
+/* ── BOTTOM STRIPE ── */
+.bottom-stripe{
+  height:6px;
+  background:linear-gradient(to right,var(--blue),var(--gold),var(--blue));
+}
+
+@media(max-width:700px){
+  .header-band,.hero,.divider,.manifesto{padding-left:24px;padding-right:24px}
+  .three-col{grid-template-columns:1fr;padding:24px}
+  .tier-strip{padding:0 24px 32px}
+  .tiers{grid-template-columns:1fr 1fr}
+  .bottom-statement,.footer{padding-left:24px;padding-right:24px}
+  .manifesto{margin-left:24px;margin-right:24px}
+}
+</style>
+</head>
+<body>
+<div class="poster">
+
+  <div class="top-stripe"></div>
+
+  <!-- HEADER -->
+  <div class="header-band">
+    <div class="brand">Pathfinder</div>
+    <div class="coming-pill">✦ Coming Soon</div>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-kicker">A new kind of personal AI</div>
+    <h1 class="hero-headline">
+      Your mind.<br/>
+      <em>Your data.</em><br/>
+      <span class="gold">Your rules.</span>
+    </h1>
+    <p class="hero-sub">The personal AI that lives on your machine, grows with your life, and answers to no one but you — from your first journal entry to your full sovereign digital life.</p>
+  </div>
+
+  <div class="divider">
+    <div class="divider-line"></div>
+    <div class="divider-ornament">✦ ✦ ✦</div>
+    <div class="divider-line"></div>
+  </div>
+
+  <!-- MANIFESTO -->
+  <div class="manifesto">
+    <div class="manifesto-glow"></div>
+    <div class="manifesto-quote">
+      Other AI promises privacy.<br/>
+      <em>Pathfinder</em> is built for it.
+    </div>
+    <div class="manifesto-rule"></div>
+    <div class="manifesto-tagline">Sovereignty by design.</div>
+  </div>
+
+  <!-- THREE PILLARS -->
+  <div class="three-col">
+    <div class="col-card">
+      <span class="col-icon">🔐</span>
+      <div class="col-title">Your vault. Your keys.</div>
+      <p class="col-body">Passwords, documents, medical records, memories — encrypted on your machine behind a passphrase only you know. The people who built Pathfinder have never seen your data. And never will.</p>
+    </div>
+    <div class="col-card warm">
+      <span class="col-icon">🧠</span>
+      <div class="col-title">AI that works for you.</div>
+      <p class="col-body">Run free local AI — Llama 3, DeepSeek, Qwen3 — with no internet needed. Or call Claude, ChatGPT, Gemini, Grok. Mix per persona. Your data never changes. Only who helps you think about it.</p>
+    </div>
+    <div class="col-card strong">
+      <span class="col-icon">📱</span>
+      <div class="col-title">Your life. From anywhere.</div>
+      <p class="col-body">Talk to your Pathfinder from Telegram. Capture a memory abroad. Retrieve your passport at a border. Switch personas. Trigger agents. Publish to the world. All from your phone. All private.</p>
+    </div>
+  </div>
+
+  <!-- TIER STRIP -->
+  <div class="tier-strip">
+    <div class="tier-strip-label">Four tiers. One promise. Your data stays yours.</div>
+    <div class="tiers">
+      <div class="tier-item t1">
+        <div class="tier-num">SETTLER</div>
+        <div class="tier-title">Settler</div>
+        <div class="tier-desc">Encrypted vault, memory capture, Telegram gateway, social publishing. No AI account needed.</div>
+      </div>
+      <div class="tier-item t2">
+        <div class="tier-num">SCOUT</div>
+        <div class="tier-title">Scout</div>
+        <div class="tier-desc">Free local models — Llama 3, DeepSeek, Qwen3. AI on your machine. No internet required.</div>
+      </div>
+      <div class="tier-item t3">
+        <div class="tier-num">PIONEER</div>
+        <div class="tier-title">Pioneer</div>
+        <div class="tier-desc">Call Claude, ChatGPT, Gemini, Grok. Trigger agents and automation. Your vault stays local. Always.</div>
+      </div>
+      <div class="tier-item t4">
+        <div class="tier-num">EXPLORER</div>
+        <div class="tier-title" style="color:rgba(255,255,255,.4)">Explorer</div>
+        <div class="tier-desc">Hardware wallet signing. Full cryptographic identity. Immutable proof your data has always been yours.</div>
+        <div class="tier-glow-word">Explorer ✦</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM STATEMENT -->
+  <div class="bottom-statement">
+    <div class="statement-main">Your mind deserves a home <em>it owns.</em></div>
+    <p class="statement-sub">Free and open source. Runs on your machine. Start with a journal. Build a life archive. Think privately. Own everything.</p>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div>
+      <div class="footer-brand">OpenNextFrontier — Pathfinder</div>
+      <div class="footer-tagline">Navigate what's next.</div>
+    </div>
+    <div class="footer-right">
+      <div>Free &amp; Open Source</div>
+      <div>Part of the <span class="highlight">OpenNextFrontier</span></div>
+      <div>Sovereignty by design.</div>
+    </div>
+  </div>
+
+  <div class="bottom-stripe"></div>
+
+</div>
+</body>
+</html>
