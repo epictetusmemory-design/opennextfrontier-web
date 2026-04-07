@@ -443,15 +443,25 @@ nav .brand{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600
 </style>
 </head>
 <body>
-
-<nav>
-  <span class="brand">🦅 Pathfinder</span>
-  <a href="index.html">Home</a>
-  <a href="architecture.html">Architecture</a>
-  <a href="capabilities.html">Capabilities</a>
-  <a href="openclaw.html">vs OpenClaw</a>
-  <a href="whitepaper.html" class="active">White Paper</a>
+<nav style="background:#04153f;padding:0 32px;display:flex;align-items:center;gap:2px;flex-wrap:wrap;border-bottom:2px solid rgba(196,145,26,.3);position:sticky;top:0;z-index:100;min-height:44px;">
+  <a href="index.html" style="font-family:'Playfair Display',serif;font-size:14px;font-weight:700;color:#fff;letter-spacing:.1em;margin-right:16px;text-decoration:none;white-space:nowrap;">🦅 Pathfinder</a>
+  <a href="index.html" id="nav-home" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:12px 9px;letter-spacing:.07em;white-space:nowrap;">Home</a>
+  <a href="architecture.html" id="nav-arch" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:12px 9px;letter-spacing:.07em;white-space:nowrap;">Architecture</a>
+  <a href="wirediagram.html" id="nav-wire" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:12px 9px;letter-spacing:.07em;white-space:nowrap;">Wire Diagram</a>
+  <a href="layers.html" id="nav-layers" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:12px 9px;letter-spacing:.07em;white-space:nowrap;">Layer Map</a>
+  <a href="components.html" id="nav-comp" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:12px 9px;letter-spacing:.07em;white-space:nowrap;">Components</a>
+  <a href="capabilities.html" id="nav-cap" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:12px 9px;letter-spacing:.07em;white-space:nowrap;">Capabilities</a>
+  <a href="openclaw.html" id="nav-claw" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:12px 9px;letter-spacing:.07em;white-space:nowrap;">vs OpenClaw</a>
+  <a href="whitepaper.html" id="nav-wp" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:12px 9px;letter-spacing:.07em;white-space:nowrap;">White Paper</a>
+  <div style="flex:1;"></div>
+  <a href="index.html#download" style="font-family:'DM Mono',monospace;font-size:10px;background:#c4911a;color:#fff;padding:8px 16px;letter-spacing:.08em;text-decoration:none;white-space:nowrap;">⬇ Download</a>
 </nav>
+<script>
+  var el = document.getElementById('nav-wp');
+  if(el) el.style.color = '#c4911a';
+</script>
+
+
 
 <!-- COVER -->
 <div class="cover">
