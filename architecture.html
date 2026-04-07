@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pathfinder — System Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#0033AD;
+  --blue-dark:#002080;
+  --blue-warm:#1a45c0;
+  --blue-light:#3366dd;
+  --blue-pale:#dde5f8;
+  --blue-mid:#6688cc;
+  --navy:#00103d;
+  --navy-warm:#04153f;
+  --gold:#c4911a;
+  --gold-light:#e8b84b;
+  --gold-pale:#fdf3dc;
+  --red:#b81818;
+  --green:#1a7a4a;
+  --green-pale:#d4f0e0;
+  --white:#ffffff;
+  --warm-white:#fdfaf5;
+  --off-white:#f4f6fb;
+  --ink:#0a0a14;
+  --muted:#3a4a72;
+  --rule:#c0cce8;
+  --local:#1a6b3a;
+  --local-pale:#d4eed9;
+  --cloud:#6b1a8a;
+  --cloud-pale:#ead4f5;
+}
+html,body{margin:0;padding:0;background:var(--off-white);font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}
+.page{max-width:1100px;margin:0 auto;padding:32px 24px 48px}
+
+/* ── HEADER ── */
+.top-stripe{height:5px;background:linear-gradient(to right,var(--blue),var(--gold),var(--blue));margin-bottom:0}
+.header-band{background:var(--navy-warm);padding:20px 40px;display:flex;align-items:center;justify-content:space-between;margin-bottom:32px}
+.brand{font-family:'Playfair Display',serif;font-size:14px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--white)}
+.header-title{font-family:'Playfair Display',serif;font-size:clamp(22px,3vw,32px);font-weight:700;color:var(--white);text-align:center}
+.header-sub{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.35);text-align:right}
+
+/* ── LEGEND ── */
+.legend{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:24px;padding:12px 20px;background:var(--white);border:1px solid var(--rule)}
+.legend-item{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:.04em}
+.legend-dot{width:12px;height:12px;border-radius:2px;flex-shrink:0}
+.ld-local{background:var(--local)}
+.ld-cloud{background:var(--cloud)}
+.ld-encrypted{background:var(--gold)}
+.ld-flow{background:var(--blue)}
+.ld-blocked{background:var(--red)}
+
+/* ── MAIN GRID ── */
+.arch-grid{display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:start}
+
+/* ── LEFT COLUMN — INPUT CHANNELS ── */
+.channels{display:flex;flex-direction:column;gap:10px}
+.channel-card{
+  background:var(--white);
+  border:1px solid var(--rule);
+  border-left:3px solid var(--blue);
+  padding:12px 14px;
+  position:relative;
+}
+.channel-icon{font-size:20px;margin-bottom:4px}
+.channel-name{font-family:'Playfair Display',serif;font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px}
+.channel-desc{font-size:10px;color:var(--muted);line-height:1.4}
+.channel-tag{
+  font-family:'DM Mono',monospace;
+  font-size:9px;
+  letter-spacing:.08em;
+  padding:2px 6px;
+  margin-top:6px;
+  display:inline-block;
+}
+.tag-local{background:var(--local-pale);color:var(--local)}
+.tag-cloud{background:var(--cloud-pale);color:var(--cloud)}
+
+/* ── RIGHT COLUMN — BRAIN ── */
+.brain-container{
+  background:var(--white);
+  border:2px solid var(--blue);
+  position:relative;
+  overflow:hidden;
+}
+.brain-header{
+  background:var(--blue);
+  padding:10px 20px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.brain-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--white)}
+.brain-subtitle{font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,.5);letter-spacing:.1em;text-transform:uppercase}
+.brain-inner{padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* ── BRAIN SECTIONS ── */
+.brain-section{
+  border:1px solid var(--rule);
+  background:var(--off-white);
+  position:relative;
+  overflow:hidden;
+}
+.brain-section::before{
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:3px;
+}
+.bs-orchestration::before{background:var(--blue)}
+.bs-memory::before{background:var(--local)}
+.bs-vault::before{background:var(--gold)}
+.bs-llm::before{background:var(--blue-light)}
+
+.section-header-row{
+  padding:10px 14px 8px;
+  border-bottom:1px solid var(--rule);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.section-icon{font-size:16px}
+.section-name{font-family:'Playfair Display',serif;font-size:13px;font-weight:700;color:var(--ink)}
+.section-body{padding:10px 14px}
+
+/* ── FILE TREE ── */
+.file-tree{font-family:'DM Mono',monospace;font-size:10px;line-height:1.9;color:var(--muted)}
+.file-tree .folder{color:var(--blue);font-weight:500}
+.file-tree .encrypted{color:var(--gold);font-weight:500}
+.file-tree .local{color:var(--local)}
+.file-tree .indent{padding-left:14px}
+.file-tree .indent2{padding-left:28px}
+
+/* ── MINI CARDS ── */
+.mini-cards{display:flex;flex-direction:column;gap:6px}
+.mini-card{
+  padding:7px 10px;
+  background:var(--white);
+  border:1px solid var(--rule);
+  border-left:2px solid var(--blue-mid);
+  font-size:10px;
+}
+.mini-card-title{font-weight:600;color:var(--ink);margin-bottom:2px;font-size:11px}
+.mini-card-desc{color:var(--muted);line-height:1.4}
+.mini-card.gold{border-left-color:var(--gold)}
+.mini-card.green{border-left-color:var(--local)}
+.mini-card.red{border-left-color:var(--red)}
+
+/* ── LLM PROVIDERS ── */
+.llm-section{
+  grid-column:1/-1;
+  border:1px solid var(--rule);
+  background:var(--off-white);
+  position:relative;
+  overflow:hidden;
+}
+.llm-section::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--blue-light)}
+.provider-row{display:flex;gap:8px;padding:10px 14px;flex-wrap:wrap}
+.provider{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 10px;
+  font-size:10px;
+  font-family:'DM Mono',monospace;
+  border:1px solid var(--rule);
+  background:var(--white);
+}
+.provider.local-p{border-color:var(--local);color:var(--local)}
+.provider.cloud-p{border-color:var(--cloud);color:var(--cloud)}
+.provider-dot{width:7px;height:7px;border-radius:50%}
+.dot-local{background:var(--local)}
+.dot-cloud{background:var(--cloud)}
+.tier-block{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 10px;
+  font-size:9px;
+  font-family:'DM Mono',monospace;
+  letter-spacing:.05em;
+  border-radius:1px;
+}
+.tb-0{background:var(--local-pale);color:var(--local);border:1px solid rgba(26,106,58,.2)}
+.tb-1{background:var(--blue-pale);color:var(--blue);border:1px solid rgba(0,51,173,.2)}
+.tb-2{background:var(--cloud-pale);color:var(--cloud);border:1px solid rgba(107,26,138,.2)}
+.tb-blocked{background:#fde8e8;color:var(--red);border:1px solid rgba(184,24,24,.2)}
+
+/* ── FLOW ARROWS ── */
+.flow-section{
+  display:flex;
+  align-items:stretch;
+  gap:0;
+  margin:16px 0 8px;
+}
+.flow-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 16px;
+  font-size:10px;
+  font-family:'DM Mono',monospace;
+  background:var(--white);
+  border:1px solid var(--rule);
+  flex:1;
+}
+.flow-arrow-right{
+  color:var(--blue);
+  font-size:16px;
+  flex-shrink:0;
+  padding:0 4px;
+}
+.flow-arrow-blocked{color:var(--red)}
+.flow-label{color:var(--muted);font-size:9px;display:block;margin-top:2px}
+
+/* ── DATA FLOW DIAGRAM ── */
+.data-flow{
+  margin-top:16px;
+  background:var(--white);
+  border:1px solid var(--rule);
+  padding:16px 20px;
+}
+.flow-title{
+  font-family:'Playfair Display',serif;
+  font-size:15px;
+  font-weight:700;
+  color:var(--ink);
+  margin-bottom:14px;
+  padding-bottom:8px;
+  border-bottom:1px solid var(--rule);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.flow-diagram{display:flex;flex-direction:column;gap:10px}
+.flow-path{
+  display:flex;
+  align-items:center;
+  gap:0;
+  flex-wrap:nowrap;
+  overflow-x:auto;
+}
+.flow-node{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  min-width:80px;
+  flex-shrink:0;
+}
+.flow-node-box{
+  width:72px;height:44px;
+  display:flex;align-items:center;justify-content:center;
+  text-align:center;
+  font-family:'DM Mono',monospace;
+  font-size:9px;
+  line-height:1.3;
+  border:1px solid var(--rule);
+  background:var(--off-white);
+  color:var(--muted);
+  padding:4px;
+}
+.flow-node-box.blue-box{background:var(--blue-pale);border-color:var(--blue-mid);color:var(--blue)}
+.flow-node-box.gold-box{background:var(--gold-pale);border-color:var(--gold);color:var(--gold)}
+.flow-node-box.green-box{background:var(--local-pale);border-color:var(--local);color:var(--local)}
+.flow-node-box.cloud-box{background:var(--cloud-pale);border-color:var(--cloud);color:var(--cloud)}
+.flow-node-box.red-box{background:#fde8e8;border-color:var(--red);color:var(--red)}
+.flow-node-box.navy-box{background:var(--navy-warm);border-color:var(--blue);color:rgba(255,255,255,.8)}
+.flow-node-label{font-size:8px;color:var(--muted);margin-top:4px;text-align:center;font-family:'DM Mono',monospace;letter-spacing:.03em}
+.flow-connector{
+  display:flex;
+  align-items:center;
+  flex-shrink:0;
+  padding:0 2px;
+  margin-bottom:14px;
+}
+.flow-connector-line{
+  height:1px;width:24px;
+  background:var(--blue-mid);
+  position:relative;
+}
+.flow-connector-line::after{
+  content:'▶';
+  position:absolute;
+  right:-6px;top:-6px;
+  color:var(--blue-mid);
+  font-size:11px;
+}
+.flow-connector-line.blocked{background:var(--red)}
+.flow-connector-line.blocked::after{color:var(--red);content:'✕'}
+.flow-path-label{
+  font-family:'DM Mono',monospace;
+  font-size:9px;
+  color:var(--muted);
+  letter-spacing:.05em;
+  margin-right:8px;
+  flex-shrink:0;
+  width:60px;
+  text-align:right;
+}
+
+/* ── SOVEREIGNTY NOTE ── */
+.sovereignty-bar{
+  background:var(--navy-warm);
+  color:var(--white);
+  padding:14px 24px;
+  margin-top:16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.sov-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:11px;
+  font-family:'DM Mono',monospace;
+  letter-spacing:.05em;
+  color:rgba(255,255,255,.7);
+}
+.sov-icon{font-size:14px}
+.sov-item.highlight{color:var(--gold-light)}
+
+/* ── FOOTER ── */
+.footer{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:12px 0 0;
+  margin-top:12px;
+  border-top:1px solid var(--rule);
+}
+.footer-brand{font-family:'Playfair Display',serif;font-size:14px;font-weight:700;color:var(--ink)}
+.footer-note{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.08em;text-align:right}
+
+@media(max-width:700px){
+  .arch-grid{grid-template-columns:1fr}
+  .brain-inner{grid-template-columns:1fr}
+  .llm-section{grid-column:1}
+  .header-band{flex-direction:column;gap:8px;text-align:center;padding:16px 24px}
+}
+</style>
+</head>
+<body>
+
+<div class="top-stripe"></div>
+
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header-band">
+    <div class="brand">Pathfinder</div>
+    <div class="header-title">System Architecture &amp; Data Flow</div>
+    <div class="header-sub">v1.0.0-alpha · March 2026</div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot ld-local"></div>Stays local — never leaves machine</div>
+    <div class="legend-item"><div class="legend-dot ld-cloud"></div>Optional cloud (conversation only)</div>
+    <div class="legend-item"><div class="legend-dot ld-encrypted"></div>AES-256 encrypted</div>
+    <div class="legend-item"><div class="legend-dot ld-flow"></div>Data flow</div>
+    <div class="legend-item"><div class="legend-dot ld-blocked"></div>Blocked by architecture (Scout and below)</div>
+  </div>
+
+  <!-- MAIN ARCH GRID -->
+  <div class="arch-grid">
+
+    <!-- LEFT — INPUT CHANNELS -->
+    <div class="channels">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--blue-mid);margin-bottom:4px">Input Channels</div>
+
+      <div class="channel-card">
+        <div class="channel-icon">🌐</div>
+        <div class="channel-name">Web UI</div>
+        <div class="channel-desc">Browser at localhost:3000. All traffic stays on machine.</div>
+        <span class="channel-tag tag-local">Local only</span>
+      </div>
+
+      <div class="channel-card">
+        <div class="channel-icon">📱</div>
+        <div class="channel-name">Telegram</div>
+        <div class="channel-desc">Polling mode. No public IP. Sender whitelist. PIN per persona.</div>
+        <span class="channel-tag tag-cloud">Encrypted transit</span>
+      </div>
+
+      <div class="channel-card" style="border-left-color:var(--gold);opacity:.6">
+        <div class="channel-icon">📡</div>
+        <div class="channel-name">Signal</div>
+        <div class="channel-desc">Planned — Phase 3+</div>
+        <span class="channel-tag" style="background:var(--gold-pale);color:var(--gold)">Coming soon</span>
+      </div>
+
+      <div style="margin-top:8px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--blue-mid);margin-bottom:4px">Output Channels</div>
+
+      <div class="channel-card" style="border-left-color:var(--green)">
+        <div class="channel-icon">📤</div>
+        <div class="channel-name">Blotato</div>
+        <div class="channel-desc">Social publish — Instagram, Twitter, LinkedIn. Phase 5.</div>
+        <span class="channel-tag tag-cloud">Outbound only</span>
+      </div>
+
+      <div class="channel-card" style="border-left-color:var(--green)">
+        <div class="channel-icon">📅</div>
+        <div class="channel-name">n8n / Calendar</div>
+        <div class="channel-desc">Google Calendar, Gmail via OAuth. Tool calls only.</div>
+        <span class="channel-tag tag-cloud">Outbound only</span>
+      </div>
+
+    </div>
+
+    <!-- RIGHT — BRAIN -->
+    <div class="brain-container">
+      <div class="brain-header">
+        <div>
+          <div class="brain-title">🧠 Pathfinder — Node.js Server</div>
+          <div class="brain-subtitle">localhost:3000 · Your machine · Your hardware</div>
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,.4);text-align:right;line-height:1.8">
+          server.js<br/>gateway.js<br/>soul.js
+        </div>
+      </div>
+
+      <div class="brain-inner">
+
+        <!-- ORCHESTRATION -->
+        <div class="brain-section bs-orchestration">
+          <div class="section-header-row">
+            <span class="section-icon">⚡</span>
+            <span class="section-name">Mind — Orchestration</span>
+          </div>
+          <div class="section-body">
+            <div class="mini-cards">
+              <div class="mini-card">
+                <div class="mini-card-title">Intent Router</div>
+                <div class="mini-card-desc">Detects tokens (memory:, find:, journal:) vs natural language. Routes to correct handler.</div>
+              </div>
+              <div class="mini-card">
+                <div class="mini-card-title">Persona Engine</div>
+                <div class="mini-card-desc">Loads active persona. Applies system prompt, tone, tier enforcement, vault access grants.</div>
+              </div>
+              <div class="mini-card">
+                <div class="mini-card-title">Tool Factory</div>
+                <div class="mini-card-desc">Web search (DDG/Serper), calculator, n8n webhooks. Tools inject results into LLM context.</div>
+              </div>
+              <div class="mini-card">
+                <div class="mini-card-title">Security Tier Check</div>
+                <div class="mini-card-desc">Settler → no LLM. Pioneer+ → local only. Enforced architecturally, not by config.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MEMORY -->
+        <div class="brain-section bs-memory">
+          <div class="section-header-row">
+            <span class="section-icon">💾</span>
+            <span class="section-name">Memory — Local Storage</span>
+          </div>
+          <div class="section-body">
+            <div class="file-tree">
+              <div><span class="folder">data/</span></div>
+              <div class="indent"><span class="folder">soul/</span></div>
+              <div class="indent2"><span class="encrypted">soul.vault</span> ← AES-256</div>
+              <div class="indent2">soul.json</div>
+              <div class="indent2">soul.md</div>
+              <div class="indent"><span class="folder">personas/</span></div>
+              <div class="indent2">p1.json · p2.json…</div>
+              <div class="indent"><span class="folder">memory/</span></div>
+              <div class="indent2"><span class="local">SOUL.md</span> ← shared</div>
+              <div class="indent2"><span class="local">vectors.json</span></div>
+              <div class="indent2"><span class="folder">ego-p1/</span></div>
+              <div class="indent2" style="padding-left:42px">episodic/</div>
+              <div class="indent2" style="padding-left:42px">reference/</div>
+              <div class="indent"><span class="folder">conversations/</span></div>
+              <div class="indent2">per-persona chat history</div>
+            </div>
+            <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px">
+              <div class="tier-block tb-0">Settler — BM25 keyword search</div>
+              <div class="tier-block tb-1">Scout+ — Vector semantic search</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VAULT -->
+        <div class="brain-section bs-vault">
+          <div class="section-header-row">
+            <span class="section-icon">🔐</span>
+            <span class="section-name">Soul Vault — Encrypted</span>
+          </div>
+          <div class="section-body">
+            <div class="mini-cards">
+              <div class="mini-card gold">
+                <div class="mini-card-title">AES-256-GCM Encryption</div>
+                <div class="mini-card-desc">PBKDF2 310k iterations. Key cached in RAM for session only. Never written to disk.</div>
+              </div>
+              <div class="mini-card gold">
+                <div class="mini-card-title">Vault Contents</div>
+                <div class="mini-card-desc">API keys · Credit cards · Documents · Passwords · Wallet stub (Immuta)</div>
+              </div>
+              <div class="mini-card gold">
+                <div class="mini-card-title">Sensitivity Tiers</div>
+                <div class="mini-card-desc">CRITICAL — never leaves · SENSITIVE — confirm required · PERSONAL — Scout+</div>
+              </div>
+              <div class="mini-card green">
+                <div class="mini-card-title">.soul Export</div>
+                <div class="mini-card-desc">Encrypted zip of all data/. Portable. Import on any Pathfinder instance. No server involved.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LLM -->
+        <div class="brain-section bs-llm">
+          <div class="section-header-row">
+            <span class="section-icon">🤖</span>
+            <span class="section-name">LLM Proxy — Inference Layer</span>
+          </div>
+          <div class="section-body">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:8px;line-height:1.5">Only conversation context reaches providers. Vault, memory files, and documents never leave Pathfinder.</div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px">Local providers</div>
+              <div class="provider local-p"><div class="provider-dot dot-local"></div>Ollama — Llama 3 · DeepSeek · Qwen3</div>
+              <div class="provider local-p"><div class="provider-dot dot-local"></div>BitNet — 1-bit quantized CPU</div>
+              <div style="font-size:9px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin:6px 0 2px">Cloud providers</div>
+              <div class="provider cloud-p"><div class="provider-dot dot-cloud"></div>Gemini · Claude · GPT · Grok</div>
+              <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">
+                <div class="tier-block tb-1">Pioneer — local + cloud allowed</div>
+                <div class="tier-block tb-blocked">Scout — local only · cloud blocked by architecture</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /brain-inner -->
+    </div><!-- /brain-container -->
+  </div><!-- /arch-grid -->
+
+  <!-- DATA FLOW DIAGRAM -->
+  <div class="data-flow">
+    <div class="flow-title">
+      <span>→</span> Data Flow Paths
+    </div>
+    <div class="flow-diagram">
+
+      <!-- PATH 1 -->
+      <div class="flow-path">
+        <div class="flow-path-label">Settler<br/>message</div>
+        <div class="flow-node"><div class="flow-node-box blue-box">📱 Phone<br/>Telegram</div><div class="flow-node-label">input</div></div>
+        <div class="flow-connector"><div class="flow-connector-line"></div></div>
+        <div class="flow-node"><div class="flow-node-box navy-box">Intent<br/>Router</div><div class="flow-node-label">brain</div></div>
+        <div class="flow-connector"><div class="flow-connector-line"></div></div>
+        <div class="flow-node"><div class="flow-node-box green-box">memory:<br/>token</div><div class="flow-node-label">parse token</div></div>
+        <div class="flow-connector"><div class="flow-connector-line"></div></div>
+        <div class="flow-node"><div class="flow-node-box gold-box">data/<br/>memory/</div><div class="flow-node-label">stored local</div></div>
+        <div class="flow-connector"><div class="flow-connector-line"></div></div>
+        <div class="flow-node"><div class="flow-node-box blue-box">✦ stored<br/>confirmation</div><div class="flow-node-label">response</div></div>
+      </div>
+
+      <!-- PATH 2 -->
+      <div class="flow-path">
+        <div class="flow-path-label">Pioneer<br/>question</div>
+        <div class="flow-node"><div class="flow-node-box blue-box">🌐 Web UI<br/>question</div><div class="flow-node-label">input</div></div>
+        <div class="flow-connector"><div class="flow-connector-line"></div></div>
+        <div class="flow-node"><div class="flow-node-box navy-box">Memory<br/>Search</div><div class="flow-node-label">local search</div></div>
+        <div class="flow-connector"><div class="flow-connector-line"></div></div>
+        <div class="flow-node"><div class="flow-node-box navy-box">LLM<br/>Proxy</div><div class="flow-node-label">+ context</div></div>
+        <div class="flow-connector"><div class="flow-connector-line"></div></div>
+        <div class="flow-node"><div class="flow-node-box cloud-box">Gemini /<br/>Claude</div><div class="flow-node-label">inference only</div></div>
+        <div class="flow-connector"><div class="flow-connector-line"></div></div>
+        <div class="flow-node"><div class="flow-node-box blue-box">Response<br/>to user</div><div class="flow-node-label">answer</div></div>
+      </div>
+
+      <!-- PATH 3 -->
+      <div class="flow-path">
+        <div class="flow-path-label">Scout<br/>blocked</div>
+        <div class="flow-node"><div class="flow-node-box blue-box">📱 Phone<br/>question</div><div class="flow-node-label">input</div></div>
+        <div class="flow-connector"><div class="flow-connector-line"></div></div>
+        <div class="flow-node"><div class="flow-node-box navy-box">Tier<br/>Check</div><div class="flow-node-label">enforce</div></div>
+        <div class="flow-connector"><div class="flow-connector-line blocked"></div></div>
+        <div class="flow-node"><div class="flow-node-box red-box">Cloud<br/>blocked ✕</div><div class="flow-node-label">architecture</div></div>
+        <div class="flow-connector"><div class="flow-connector-line"></div></div>
+        <div class="flow-node"><div class="flow-node-box green-box">Ollama<br/>local</div><div class="flow-node-label">local only</div></div>
+        <div class="flow-connector"><div class="flow-connector-line"></div></div>
+        <div class="flow-node"><div class="flow-node-box blue-box">Response<br/>private</div><div class="flow-node-label">answer</div></div>
+      </div>
+
+      <!-- PATH 4 -->
+      <div class="flow-path">
+        <div class="flow-path-label">Vault<br/>delivery</div>
+        <div class="flow-node"><div class="flow-node-box blue-box">📱 "send<br/>passport"</div><div class="flow-node-label">request</div></div>
+        <div class="flow-connector"><div class="flow-connector-line"></div></div>
+        <div class="flow-node"><div class="flow-node-box navy-box">PIN<br/>auth</div><div class="flow-node-label">verify</div></div>
+        <div class="flow-connector"><div class="flow-connector-line"></div></div>
+        <div class="flow-node"><div class="flow-node-box gold-box">soul<br/>.vault</div><div class="flow-node-label">decrypt</div></div>
+        <div class="flow-connector"><div class="flow-connector-line"></div></div>
+        <div class="flow-node"><div class="flow-node-box blue-box">📎 File<br/>to phone</div><div class="flow-node-label">delivered</div></div>
+        <div class="flow-connector" style="opacity:0"><div class="flow-connector-line"></div></div>
+        <div class="flow-node" style="opacity:0"><div class="flow-node-box"></div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SOVEREIGNTY BAR -->
+  <div class="sovereignty-bar">
+    <div class="sov-item highlight"><span class="sov-icon">🔐</span> Vault: AES-256 · never leaves machine</div>
+    <div class="sov-item"><span class="sov-icon">💾</span> Memory: local files + vectors.json</div>
+    <div class="sov-item"><span class="sov-icon">👤</span> Personas: scoped · isolated · tiered</div>
+    <div class="sov-item"><span class="sov-icon">🤖</span> LLM: conversation context only</div>
+    <div class="sov-item highlight"><span class="sov-icon">✦</span> Sovereignty by design. — architecture, not policy</div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-brand">Pathfinder</div>
+    <div class="footer-note">
+      Part of the Open Neptune Project · Free &amp; Open Source · v1.0.0-alpha
+    </div>
+  </div>
+
+</div><!-- /page -->
+</body>
+</html>

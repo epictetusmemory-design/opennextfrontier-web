@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pathfinder — Capabilities vs Cloud AI · OpenNextFrontier</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #080b10;
+    --bg2: #0d1117;
+    --bg3: #131920;
+    --border: #1e2730;
+    --border2: #2a3540;
+    --text: #e8edf2;
+    --muted: #7a8a96;
+    --muted2: #4a5a66;
+    --pf: #c8a96e;
+    --pf2: #a07830;
+    --pf-dim: rgba(200,169,110,0.08);
+    --cloud: #5b9cf6;
+    --cloud2: #3a7adc;
+    --cloud-dim: rgba(91,156,246,0.08);
+    --gold: #c8a96e;
+    --gold-dim: rgba(200,169,110,0.1);
+    --blue: #4a9eff;
+    --purple: #9b7aff;
+    --green: #4ade80;
+    --amber: #fbbf24;
+    --red: #f87171;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(200,169,110,.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,169,110,.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: #04153f;
+    padding: 10px 32px;
+    display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+    border-bottom: 2px solid rgba(200,169,110,.3);
+  }
+  nav a { font-family: 'DM Mono', monospace; font-size: 10px; color: rgba(255,255,255,.55); text-decoration: none; padding: 4px 10px; letter-spacing: .08em; }
+  nav a:hover, nav a.active { color: #c8a96e; }
+  nav .brand { font-size: 13px; font-weight: 700; color: #fff; letter-spacing: .12em; margin-right: 20px; }
+
+  .wrap {
+    position: relative; z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  /* HEADER */
+  .header { text-align: center; margin-bottom: 56px; }
+  .header-eyebrow { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: .2em; color: var(--pf); text-transform: uppercase; margin-bottom: 16px; opacity: .8; }
+  .header h1 { font-family: 'Playfair Display', serif; font-size: clamp(32px,5vw,56px); font-weight: 900; line-height: 1.1; margin-bottom: 16px; color: var(--text); }
+  .header h1 span.pf-word { color: var(--pf); }
+  .header h1 span.vs { color: var(--muted2); font-size: .5em; vertical-align: middle; margin: 0 8px; }
+  .header h1 span.cloud-word { color: var(--cloud); }
+  .header-sub { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); max-width: 540px; margin: 0 auto; line-height: 1.6; }
+
+  /* SCORE CARDS */
+  .score-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 40px; }
+  .score-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 24px; position: relative; overflow: hidden; }
+  .score-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .score-card.pf-card::before { background: var(--pf); }
+  .score-card.cloud-card::before { background: var(--cloud); }
+  .score-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: .15em; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
+  .score-num { font-family: 'Playfair Display', serif; font-size: 48px; font-weight: 900; line-height: 1; margin-bottom: 4px; }
+  .score-card.pf-card .score-num { color: var(--pf); }
+  .score-card.cloud-card .score-num { color: var(--cloud); }
+  .score-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  /* SECTION TITLE */
+  .section-title { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+
+  /* LEGEND */
+  .legend { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 16px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+  /* COMPARISON TABLE */
+  .comp-table { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 40px; }
+  .comp-header { display: grid; grid-template-columns: 2fr 1.2fr 1fr 1fr 1fr; background: var(--bg3); border-bottom: 1px solid var(--border2); }
+  .comp-header-cell { padding: 12px 14px; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .comp-header-cell.pf-h { color: var(--pf); background: var(--pf-dim); }
+  .comp-header-cell.cloud-h { color: var(--cloud); background: var(--cloud-dim); }
+  .comp-row { display: grid; grid-template-columns: 2fr 1.2fr 1fr 1fr 1fr; border-bottom: 1px solid var(--border); }
+  .comp-row:last-child { border-bottom: none; }
+  .comp-row.section-row { background: var(--bg3); grid-template-columns: 1fr; }
+  .comp-row.section-row .comp-cell { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding: 8px 14px; }
+  .comp-cell { padding: 10px 14px; font-size: 12px; color: var(--text); border-right: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
+  .comp-cell:last-child { border-right: none; }
+  .comp-cell .feat-name { font-weight: 500; }
+  .comp-cell .feat-desc { font-size: 10px; color: var(--muted); margin-top: 2px; display: block; }
+
+  .status-cell { justify-content: center; font-family: 'DM Mono', monospace; font-size: 11px; }
+  .status-icon { font-size: 14px; }
+  .status-text { font-size: 9px; letter-spacing: .08em; }
+
+  .pf-built { background: var(--pf-dim); color: var(--pf); }
+  .pf-unique { background: rgba(200,169,110,.15); color: var(--pf); border: 1px solid rgba(200,169,110,.3); }
+  .cloud-yes { background: var(--cloud-dim); color: var(--cloud); }
+  .none { color: var(--muted2); }
+  .partial { color: var(--amber); }
+
+  /* ADVANTAGE CARDS */
+  .adv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 40px; }
+  .adv-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 20px; border-left: 3px solid var(--pf); }
+  .adv-icon { font-size: 24px; margin-bottom: 10px; display: block; }
+  .adv-title { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; color: var(--pf); margin-bottom: 8px; }
+  .adv-body { font-size: 12px; color: var(--muted); line-height: 1.7; }
+  .adv-body strong { color: var(--text); }
+
+  /* VERDICT */
+  .verdict { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 32px; margin-bottom: 40px; }
+  .verdict-title { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 900; color: var(--text); margin-bottom: 20px; }
+  .verdict-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .verdict-side h3 { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: .15em; text-transform: uppercase; margin-bottom: 12px; }
+  .verdict-side.pf-side h3 { color: var(--pf); }
+  .verdict-side.cloud-side h3 { color: var(--cloud); }
+  .bullet { font-size: 12px; color: var(--muted); line-height: 1.8; display: flex; gap: 8px; margin-bottom: 4px; }
+  .pf-side .bullet::before { content: '✦'; color: var(--pf); flex-shrink: 0; }
+  .cloud-side .bullet::before { content: '◆'; color: var(--cloud); flex-shrink: 0; }
+
+  /* FOOTER */
+  .footer { border-top: 1px solid var(--border); padding-top: 20px; display: flex; justify-content: space-between; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted2); letter-spacing: .08em; }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="brand">🦅 PATHFINDER</span>
+  <a href="index.html">Home</a>
+  <a href="architecture.html">Architecture</a>
+  <a href="wirediagram.html">Wire Diagram</a>
+  <a href="layers.html">Layer Map</a>
+  <a href="components.html">Components</a>
+  <a href="capabilities.html" class="active">Capabilities</a>
+</nav>
+
+<div class="wrap">
+
+  <div class="header">
+    <div class="header-eyebrow">OpenNextFrontier · Capability Comparison</div>
+    <h1>
+      <span class="pf-word">Pathfinder</span>
+      <span class="vs">vs</span>
+      <span class="cloud-word">Cloud AI</span>
+    </h1>
+    <div class="header-sub">How Pathfinder compares to Claude.ai, ChatGPT, and Gemini — and why sovereignty by design changes everything.</div>
+  </div>
+
+  <!-- SCORE CARDS -->
+  <div class="score-row">
+    <div class="score-card pf-card">
+      <div class="score-label">Pathfinder — Your Self-Sovereign AI Agent</div>
+      <div class="score-num">🦅</div>
+      <div class="score-desc">Local-first. Vault-encrypted. Persona-aware. Telegram gateway. Scheduler. Skills. RAG. Agent loop. Your data never leaves unless you choose it. AGPL v3 open source.</div>
+    </div>
+    <div class="score-card cloud-card">
+      <div class="score-label">Cloud AI — Claude.ai · ChatGPT · Gemini</div>
+      <div class="score-num">☁️</div>
+      <div class="score-desc">Excellent models. Convenient access. But your conversations train their models, your data lives on their servers, you can't run them offline, and you pay per message or subscription — forever.</div>
+    </div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--pf)"></div>Pathfinder — Built</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(200,169,110,.5);outline:1px solid var(--pf);outline-offset:1px"></div>Pathfinder — Unique advantage</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--cloud)"></div>Cloud AI — Yes</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>Partial / depends</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--muted2)"></div>No</div>
+  </div>
+
+  <!-- COMPARISON TABLE -->
+  <div class="section-title">Feature Comparison</div>
+  <div class="comp-table">
+    <div class="comp-header">
+      <div class="comp-header-cell">Feature</div>
+      <div class="comp-header-cell pf-h">🦅 Pathfinder</div>
+      <div class="comp-header-cell cloud-h">Claude.ai</div>
+      <div class="comp-header-cell cloud-h">ChatGPT</div>
+      <div class="comp-header-cell cloud-h">Gemini</div>
+    </div>
+
+    <!-- PRIVACY & DATA -->
+    <div class="comp-row section-row"><div class="comp-cell">Privacy &amp; Data Sovereignty</div></div>
+
+    <div class="comp-row">
+      <div class="comp-cell"><span class="feat-name">Data stays on your machine</span><span class="feat-desc">Conversations, memories, vault never leave</span></div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Always</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span><span class="status-text">Their servers</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span><span class="status-text">Their servers</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span><span class="status-text">Their servers</span></div>
+    </div>
+
+    <div class="comp-row">
+      <div class="comp-cell"><span class="feat-name">Works fully offline</span><span class="feat-desc">Local LLM via Ollama, no internet needed</span></div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Scout tier</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+    </div>
+
+    <div class="comp-row">
+      <div class="comp-cell"><span class="feat-name">AES-256 encrypted vault</span><span class="feat-desc">API keys, passwords, documents — local only</span></div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Built-in</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+    </div>
+
+    <div class="comp-row">
+      <div class="comp-cell"><span class="feat-name">No conversation training</span><span class="feat-desc">Your chats never train their models</span></div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Guaranteed</span></div>
+      <div class="comp-cell status-cell partial"><span class="status-icon">~</span><span class="status-text">Opt-out</span></div>
+      <div class="comp-cell status-cell partial"><span class="status-icon">~</span><span class="status-text">Opt-out</span></div>
+      <div class="comp-cell status-cell partial"><span class="status-icon">~</span><span class="status-text">Opt-out</span></div>
+    </div>
+
+    <div class="comp-row">
+      <div class="comp-cell"><span class="feat-name">Open source code</span><span class="feat-desc">Verify exactly what the app does</span></div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">AGPL v3</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+    </div>
+
+    <!-- AI CAPABILITIES -->
+    <div class="comp-row section-row"><div class="comp-cell">AI Capabilities</div></div>
+
+    <div class="comp-row">
+      <div class="comp-cell"><span class="feat-name">Multiple AI providers</span><span class="feat-desc">Claude, GPT, Gemini, Ollama, BitNet</span></div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">5 providers</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span><span class="status-text">Claude only</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span><span class="status-text">GPT only</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span><span class="status-text">Gemini only</span></div>
+    </div>
+
+    <div class="comp-row">
+      <div class="comp-cell"><span class="feat-name">Local LLM support</span><span class="feat-desc">Ollama · qwen3 · llama3 · gemma4 · BitNet</span></div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Full support</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+    </div>
+
+    <div class="comp-row">
+      <div class="comp-cell"><span class="feat-name">Agent loop with tools</span><span class="feat-desc">Web search, calendar, n8n, document search</span></div>
+      <div class="comp-cell status-cell pf-built"><span class="status-icon">✓</span><span class="status-text">Built</span></div>
+      <div class="comp-cell status-cell cloud-yes"><span class="status-icon">✓</span><span class="status-text">Yes</span></div>
+      <div class="comp-cell status-cell cloud-yes"><span class="status-icon">✓</span><span class="status-text">Yes</span></div>
+      <div class="comp-cell status-cell cloud-yes"><span class="status-icon">✓</span><span class="status-text">Yes</span></div>
+    </div>
+
+    <div class="comp-row">
+      <div class="comp-cell"><span class="feat-name">Streaming responses</span><span class="feat-desc">Real-time token streaming</span></div>
+      <div class="comp-cell status-cell pf-built"><span class="status-icon">✓</span><span class="status-text">All providers</span></div>
+      <div class="comp-cell status-cell cloud-yes"><span class="status-icon">✓</span></div>
+      <div class="comp-cell status-cell cloud-yes"><span class="status-icon">✓</span></div>
+      <div class="comp-cell status-cell cloud-yes"><span class="status-icon">✓</span></div>
+    </div>
+
+    <!-- IDENTITY & PERSONAS -->
+    <div class="comp-row section-row"><div class="comp-cell">Identity &amp; Personas</div></div>
+
+    <div class="comp-row">
+      <div class="comp-cell"><span class="feat-name">Multiple personas</span><span class="feat-desc">Me-Corporate, Me-Personal, Me-Hobby — each a different mind</span></div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Unlimited</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span><span class="status-text">Single identity</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span><span class="status-text">Single identity</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span><span class="status-text">Single identity</span></div>
+    </div>
+
+    <div class="comp-row">
+      <div class="comp-cell"><span class="feat-name">Per-persona LLM routing</span><span class="feat-desc">Corporate → Opus · Personal → qwen3 · zero cost</span></div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Full control</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+    </div>
+
+    <div class="comp-row">
+      <div class="comp-cell"><span class="feat-name">Security tiers</span><span class="feat-desc">Settler · Scout · Pioneer · Explorer — architectural enforcement</span></div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">4 tiers</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+    </div>
+
+    <!-- MEMORY & KNOWLEDGE -->
+    <div class="comp-row section-row"><div class="comp-cell">Memory &amp; Knowledge</div></div>
+
+    <div class="comp-row">
+      <div class="comp-cell"><span class="feat-name">Persistent local memory</span><span class="feat-desc">Persona-scoped, tagged, sensitivity tiered</span></div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">SQLite local</span></div>
+      <div class="comp-cell status-cell partial"><span class="status-icon">~</span><span class="status-text">Their servers</span></div>
+      <div class="comp-cell status-cell partial"><span class="status-icon">~</span><span class="status-text">Their servers</span></div>
+      <div class="comp-cell status-cell partial"><span class="status-icon">~</span><span class="status-text">Their servers</span></div>
+    </div>
+
+    <div class="comp-row">
+      <div class="comp-cell"><span class="feat-name">Document RAG</span><span class="feat-desc">Index your own docs, search locally</span></div>
+      <div class="comp-cell status-cell pf-built"><span class="status-icon">✓</span><span class="status-text">BM25 · local</span></div>
+      <div class="comp-cell status-cell partial"><span class="status-icon">~</span><span class="status-text">Projects</span></div>
+      <div class="comp-cell status-cell partial"><span class="status-icon">~</span><span class="status-text">Limited</span></div>
+      <div class="comp-cell status-cell partial"><span class="status-icon">~</span><span class="status-text">Gems</span></div>
+    </div>
+
+    <div class="comp-row">
+      <div class="comp-cell"><span class="feat-name">Credentials manager</span><span class="feat-desc">Passwords in vault · pfcreds import/export</span></div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Built-in</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+    </div>
+
+    <!-- AUTOMATION -->
+    <div class="comp-row section-row"><div class="comp-cell">Automation &amp; Integration</div></div>
+
+    <div class="comp-row">
+      <div class="comp-cell"><span class="feat-name">Telegram gateway</span><span class="feat-desc">Talk to your AI from your phone, abroad, offline</span></div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Built-in</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+    </div>
+
+    <div class="comp-row">
+      <div class="comp-cell"><span class="feat-name">Cron scheduler</span><span class="feat-desc">Scheduled AI jobs with Telegram delivery</span></div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Built-in</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+    </div>
+
+    <div class="comp-row">
+      <div class="comp-cell"><span class="feat-name">n8n workflow integration</span><span class="feat-desc">400+ tools via visual workflow builder</span></div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Built-in</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+    </div>
+
+    <div class="comp-row">
+      <div class="comp-cell"><span class="feat-name">Skills pipeline</span><span class="feat-desc">Folder-based skill system, no Rust required</span></div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Built-in</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+    </div>
+
+    <!-- COST -->
+    <div class="comp-row section-row"><div class="comp-cell">Cost &amp; Ownership</div></div>
+
+    <div class="comp-row">
+      <div class="comp-cell"><span class="feat-name">Free local AI</span><span class="feat-desc">Run qwen3, llama3, gemma4 — zero API cost</span></div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Always free</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+      <div class="comp-cell status-cell none"><span class="status-icon">✕</span></div>
+    </div>
+
+    <div class="comp-row">
+      <div class="comp-cell"><span class="feat-name">No subscription required</span><span class="feat-desc">Own the software, pay only for API calls you choose</span></div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Free forever</span></div>
+      <div class="comp-cell status-cell partial"><span class="status-icon">~</span><span class="status-text">Free + Pro</span></div>
+      <div class="comp-cell status-cell partial"><span class="status-icon">~</span><span class="status-text">Free + Plus</span></div>
+      <div class="comp-cell status-cell partial"><span class="status-icon">~</span><span class="status-text">Free + Advanced</span></div>
+    </div>
+
+  </div>
+
+  <!-- ADVANTAGE CARDS -->
+  <div class="section-title">Pathfinder's Structural Advantages</div>
+  <div class="adv-grid">
+    <div class="adv-card">
+      <span class="adv-icon">🏛️</span>
+      <div class="adv-title">Architecture, not policy</div>
+      <div class="adv-body">Cloud AI promises privacy in their terms of service — a policy that can change. Pathfinder's <strong>Settler and Scout tiers are blocked from cloud providers at the Rust command layer</strong>. There is no config flag to flip, no policy update that changes it. Your data stays local because the code enforces it.</div>
+    </div>
+    <div class="adv-card">
+      <span class="adv-icon">🧠</span>
+      <div class="adv-title">Multiple minds, one machine</div>
+      <div class="adv-body">Cloud AI tools are built for a single identity. Pathfinder runs <strong>unlimited personas</strong>, each a fundamentally different cognitive agent — different model, system prompt, tone, tier, and key overrides. Me-Corporate on Opus 4. Me-Personal on local qwen3. Me-Creative on Gemini. Zero extra cost.</div>
+    </div>
+    <div class="adv-card">
+      <span class="adv-icon">📱</span>
+      <div class="adv-title">Your phone, your gateway</div>
+      <div class="adv-body">Cloud AI requires their app or browser. Pathfinder's <strong>Telegram gateway</strong> means you can talk to your AI from any phone, in any country, with no public IP. Intent tokens let you save memories, retrieve vault items, switch personas, and trigger agents — all from a Telegram message.</div>
+    </div>
+    <div class="adv-card">
+      <span class="adv-icon">⚡</span>
+      <div class="adv-title">Runs while you sleep</div>
+      <div class="adv-body">Cloud AI waits for you to type. Pathfinder's <strong>cron scheduler</strong> fires AI jobs on your schedule — morning briefs, research digests, reminders — and delivers them to Telegram. Skills run pipelines autonomously. Your AI works when you don't.</div>
+    </div>
+    <div class="adv-card">
+      <span class="adv-icon">🔐</span>
+      <div class="adv-title">A real vault, not a preference</div>
+      <div class="adv-body">Cloud AI has no concept of a personal vault. Pathfinder stores <strong>API keys, passwords, documents, and credentials</strong> in AES-256-GCM encryption on your machine. The key never touches disk. A pfcreds format lets you export and import your entire credentials database — fully encrypted.</div>
+    </div>
+    <div class="adv-card">
+      <span class="adv-icon">🔧</span>
+      <div class="adv-title">Extensible by design</div>
+      <div class="adv-body">Cloud AI is a black box. Pathfinder has <strong>five community extension points</strong> — gateway modules, tool factory, token handlers, storage adapters, and skills — each designed so contributors can add capabilities without touching the sovereignty core. Discord gateway. New tool. Custom skill. No Rust required for skills.</div>
+    </div>
+  </div>
+
+  <!-- VERDICT -->
+  <div class="verdict">
+    <div class="verdict-title">When to choose Pathfinder. When to use cloud AI.</div>
+    <div class="verdict-grid">
+      <div class="verdict-side pf-side">
+        <h3>Choose Pathfinder when…</h3>
+        <div class="bullet">You want your data to stay on your machine, always</div>
+        <div class="bullet">You need to work offline or in low-connectivity environments</div>
+        <div class="bullet">You want to run multiple AI personas for different contexts</div>
+        <div class="bullet">You want to talk to your AI from your phone via Telegram</div>
+        <div class="bullet">You need a personal vault for API keys, passwords, documents</div>
+        <div class="bullet">You want a scheduler that runs AI jobs while you sleep</div>
+        <div class="bullet">You want to mix local and cloud AI per persona</div>
+        <div class="bullet">You want to audit exactly what code is running</div>
+        <div class="bullet">You believe your data should answer to you, not a company</div>
+      </div>
+      <div class="verdict-side cloud-side">
+        <h3>Use cloud AI when…</h3>
+        <div class="bullet">You want the absolute best model quality right now</div>
+        <div class="bullet">You need advanced image generation or voice features</div>
+        <div class="bullet">You want deep integration with Google Workspace or Microsoft 365</div>
+        <div class="bullet">You need collaborative AI features for a team</div>
+        <div class="bullet">You prefer a fully managed, zero-setup experience</div>
+        <div class="bullet">You need enterprise compliance (SOC 2, HIPAA, etc.)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>PATHFINDER CAPABILITIES · v0.1.5 · APRIL 2026</span>
+    <span>OpenNextFrontier · AGPL v3 · opennextfrontier.com</span>
+  </div>
+
+</div>
+</body>
+</html>

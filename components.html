@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pathfinder — Component Architecture · OpenNextFrontier</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080b10;
+  --grid:#0e1420;
+  --surface:#0d1219;
+  --surface2:#111923;
+  --border:#1a2535;
+  --border-hi:#243347;
+  --text:#d4dde8;
+  --muted:#5a7a99;
+  --dim:#3a5570;
+  --gold:#c8a96e;
+  --gold-lo:rgba(200,169,110,.10);
+  --gold-mid:rgba(200,169,110,.22);
+  --green:#4ec994;
+  --green-lo:rgba(78,201,148,.10);
+  --blue:#5b9cf6;
+  --blue-lo:rgba(91,156,246,.10);
+  --purple:#a78bfa;
+  --purple-lo:rgba(167,139,250,.10);
+  --red:#f87171;
+  --red-lo:rgba(248,113,113,.10);
+  --teal:#38bdf8;
+  --teal-lo:rgba(56,189,248,.10);
+}
+
+html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased}
+
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:40px 40px;pointer-events:none;z-index:0;
+  mask-image:radial-gradient(ellipse 90% 90% at 50% 50%,black 40%,transparent 100%);
+}
+
+nav{
+  position:sticky;top:0;z-index:100;
+  background:#04153f;padding:10px 32px;
+  display:flex;align-items:center;gap:4px;flex-wrap:wrap;
+  border-bottom:2px solid rgba(200,169,110,.3);
+}
+nav a{font-family:'Space Mono',monospace;font-size:10px;color:rgba(255,255,255,.55);text-decoration:none;padding:4px 10px;letter-spacing:.08em}
+nav a:hover,nav a.active{color:#c8a96e}
+nav .brand{font-size:13px;font-weight:700;color:#fff;letter-spacing:.12em;margin-right:20px}
+
+.page{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:48px 24px 80px}
+
+/* HEADER */
+.header{text-align:center;margin-bottom:56px}
+.header-eyebrow{font-family:'Space Mono',monospace;font-size:11px;color:var(--gold);letter-spacing:.18em;text-transform:uppercase;margin-bottom:12px}
+.header-title{font-size:36px;font-weight:600;letter-spacing:-.03em;color:#e8eef5;line-height:1.15;margin-bottom:10px}
+.header-title span{color:var(--gold)}
+.header-sub{font-size:14px;color:var(--muted);max-width:520px;margin:0 auto}
+
+/* LEGEND */
+.legend{display:flex;align-items:center;justify-content:center;gap:20px;margin-bottom:48px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);font-family:'Space Mono',monospace}
+.legend-line{width:28px;height:2px;border-radius:2px}
+.legend-line.rust{background:var(--gold)}
+.legend-line.react{background:var(--blue)}
+.legend-line.storage{background:var(--purple)}
+.legend-line.gateway{background:var(--teal)}
+.legend-dot{width:8px;height:8px;border-radius:50%}
+
+/* DIAGRAM */
+.diagram{position:relative;display:flex;flex-direction:column;gap:0}
+.layer{display:flex;align-items:stretch;gap:0;position:relative}
+.layer-label{
+  writing-mode:vertical-rl;text-orientation:mixed;
+  font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--dim);
+  padding:0 10px;display:flex;align-items:center;justify-content:center;
+  min-width:32px;
+}
+.layer-content{flex:1;display:flex;gap:12px;padding:16px 0 16px 12px}
+
+/* NODES */
+.node{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:4px;
+  padding:14px 16px;
+  flex:1;
+  min-width:160px;
+  position:relative;
+  transition:border-color .2s;
+}
+.node:hover{border-color:var(--border-hi)}
+.node-icon{font-size:18px;margin-bottom:8px;display:block}
+.node-title{font-size:13px;font-weight:600;color:#e0e8f0;margin-bottom:4px}
+.node-sub{font-size:11px;color:var(--muted);line-height:1.5}
+.node-tag{
+  display:inline-block;margin-top:8px;
+  font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.06em;
+  padding:2px 7px;border-radius:2px;
+}
+
+.node.gold{border-color:var(--gold-mid);background:linear-gradient(135deg,var(--surface),rgba(200,169,110,.05))}
+.node.gold .node-title{color:var(--gold)}
+.tag-gold{background:var(--gold-lo);color:var(--gold)}
+
+.node.blue{border-color:rgba(91,156,246,.25)}
+.node.blue .node-title{color:var(--blue)}
+.tag-blue{background:var(--blue-lo);color:var(--blue)}
+
+.node.green{border-color:rgba(78,201,148,.25)}
+.node.green .node-title{color:var(--green)}
+.tag-green{background:var(--green-lo);color:var(--green)}
+
+.node.purple{border-color:rgba(167,139,250,.25)}
+.node.purple .node-title{color:var(--purple)}
+.tag-purple{background:var(--purple-lo);color:var(--purple)}
+
+.node.teal{border-color:rgba(56,189,248,.25)}
+.node.teal .node-title{color:var(--teal)}
+.tag-teal{background:var(--teal-lo);color:var(--teal)}
+
+.node.red{border-color:rgba(248,113,113,.25)}
+.node.red .node-title{color:var(--red)}
+.tag-red{background:var(--red-lo);color:var(--red)}
+
+/* SVG CONNECTORS */
+svg.connector{display:block;width:100%}
+
+/* FLOW SECTION */
+.flow-section{margin-top:48px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:24px}
+.flow-section-title{font-family:'Space Mono',monospace;font-size:11px;color:var(--gold);letter-spacing:.15em;text-transform:uppercase;margin-bottom:20px}
+.flow-steps{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.flow-step{background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:12px}
+.flow-step-num{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:.12em;margin-bottom:4px}
+.flow-step-icon{font-size:20px;margin-bottom:6px}
+.flow-step-title{font-size:12px;font-weight:600;color:#e0e8f0;margin-bottom:4px}
+.flow-step-desc{font-size:10px;color:var(--muted);line-height:1.5}
+.s-user{border-left:2px solid var(--gold)}
+.s-rust{border-left:2px solid var(--green)}
+.s-llm{border-left:2px solid var(--blue)}
+.s-storage{border-left:2px solid var(--purple)}
+.s-gateway{border-left:2px solid var(--teal)}
+
+/* FILE TREE */
+.file-tree-section{margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.file-tree-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:16px}
+.file-tree-title{font-family:'Space Mono',monospace;font-size:10px;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px}
+.tree{font-family:'Space Mono',monospace;font-size:11px;line-height:1.9;color:var(--muted)}
+.dir{color:var(--blue)}
+.file-rs{color:var(--gold)}
+.file-ts{color:var(--teal)}
+.file-json{color:var(--green)}
+.file-md{color:var(--purple)}
+.encrypted{color:var(--gold);font-weight:700}
+.comment{color:var(--dim)}
+.indent{padding-left:20px}
+.indent2{padding-left:40px}
+
+/* ROADMAP */
+.roadmap{margin-top:24px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:24px}
+.roadmap-title{font-family:'Space Mono',monospace;font-size:11px;color:var(--gold);letter-spacing:.15em;text-transform:uppercase;margin-bottom:20px}
+.roadmap-track{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px}
+.phase-card{
+  min-width:140px;flex-shrink:0;
+  background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:12px;
+  position:relative;
+}
+.phase-card.done{border-left:2px solid var(--green)}
+.phase-card.current{border-left:2px solid var(--gold)}
+.phase-card.next{border-left:2px solid var(--dim)}
+.phase-dot{width:6px;height:6px;border-radius:50%;margin-bottom:6px}
+.phase-card.done .phase-dot{background:var(--green)}
+.phase-card.current .phase-dot{background:var(--gold)}
+.phase-card.next .phase-dot{background:var(--dim)}
+.phase-num{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:.1em;margin-bottom:4px}
+.phase-name{font-size:12px;font-weight:600;color:#e0e8f0;margin-bottom:4px}
+.phase-desc{font-size:10px;color:var(--muted);line-height:1.4}
+
+@keyframes animated-dash{to{stroke-dashoffset:-20}}
+.animated-path{animation:animated-dash 1.2s linear infinite}
+
+@media(max-width:700px){
+  .layer-content{flex-direction:column}
+  .flow-steps{grid-template-columns:1fr 1fr}
+  .file-tree-section{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="brand">🦅 PATHFINDER</span>
+  <a href="index.html">Home</a>
+  <a href="architecture.html">Architecture</a>
+  <a href="wirediagram.html">Wire Diagram</a>
+  <a href="layers.html">Layer Map</a>
+  <a href="components.html" class="active">Components</a>
+  <a href="capabilities.html">Capabilities</a>
+</nav>
+
+<div class="page">
+
+  <div class="header">
+    <div class="header-eyebrow">OpenNextFrontier · Component Reference</div>
+    <div class="header-title">Pathfinder <span>Component Architecture</span></div>
+    <div class="header-sub">Tauri 2 · Rust backend · React 19 · TypeScript · SQLite · v0.1.5</div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-line rust"></div>Rust / Backend</div>
+    <div class="legend-item"><div class="legend-line react"></div>React / Frontend</div>
+    <div class="legend-item"><div class="legend-line storage"></div>Storage</div>
+    <div class="legend-item"><div class="legend-line gateway"></div>Gateway / External</div>
+  </div>
+
+  <div class="diagram">
+
+    <!-- LAYER: FRONTEND -->
+    <div class="layer">
+      <div class="layer-label" style="color:var(--blue)">FRONTEND</div>
+      <div class="layer-content">
+        <div class="node blue">
+          <span class="node-icon">⌨️</span>
+          <div class="node-title">ChatPanel.tsx</div>
+          <div class="node-sub">Streaming chat UI. Tools/Memory toggles. Agent loop routing. Conversation history. Abort controller.</div>
+          <span class="node-tag tag-blue">React 19 · streaming</span>
+        </div>
+        <div class="node blue">
+          <span class="node-icon">⚙️</span>
+          <div class="node-title">Settings — 11 Panels</div>
+          <div class="node-sub">Registry-driven panel system. API keys, Gateway, Scheduler, Personas, Soul, Logs, Knowledge, Credentials.</div>
+          <span class="node-tag tag-blue">PANEL_REGISTRY · Settings.tsx</span>
+        </div>
+        <div class="node blue">
+          <span class="node-icon">🔐</span>
+          <div class="node-title">VaultUnlock.tsx</div>
+          <div class="node-sub">Passphrase gate. Vault state machine: loading → locked → first-run → unlocked. Auto-starts Telegram gateway.</div>
+          <span class="node-tag tag-blue">App.tsx vault gate</span>
+        </div>
+        <div class="node blue">
+          <span class="node-icon">📊</span>
+          <div class="node-title">Scheduler UI</div>
+          <div class="node-sub">Create/edit/delete cron jobs. Run now. Jobs tab + Run Log tab. Per-job history button. Telegram delivery.</div>
+          <span class="node-tag tag-blue">Jobs · Run Log · History</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONNECTOR -->
+    <svg class="connector" style="height:36px" viewBox="0 0 1100 36" preserveAspectRatio="none">
+      <defs><marker id="arr-gold" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="var(--gold)"/></marker></defs>
+      <line x1="550" y1="2" x2="550" y2="34" stroke="var(--gold)" stroke-width="1.5" marker-end="url(#arr-gold)" stroke-dasharray="5 3" class="animated-path"/>
+      <text x="560" y="22" fill="var(--muted)" font-family="Space Mono" font-size="9" letter-spacing="1">Tauri invoke()</text>
+    </svg>
+
+    <!-- LAYER: RUST COMMANDS -->
+    <div class="layer">
+      <div class="layer-label" style="color:var(--gold)">COMMANDS</div>
+      <div class="layer-content">
+        <div class="node gold">
+          <span class="node-icon">🤖</span>
+          <div class="node-title">agent_chat</div>
+          <div class="node-sub">Agent loop up to 5 iterations. Tool parse → execute → inject. Dedup check. Short-circuit when no tools. Unknown tool recovery.</div>
+          <span class="node-tag tag-gold">agent.rs · 10 unit tests</span>
+        </div>
+        <div class="node gold">
+          <span class="node-icon">👤</span>
+          <div class="node-title">Persona Commands</div>
+          <div class="node-sub">get_personas · create_persona · update_persona · delete_persona. Vault key resolution per persona. Tier enforcement.</div>
+          <span class="node-tag tag-gold">commands/persona.rs</span>
+        </div>
+        <div class="node gold">
+          <span class="node-icon">💬</span>
+          <div class="node-title">Conversation + Memory</div>
+          <div class="node-sub">get/create/delete conversations and messages. get_memories · add_memory · delete_memory. count_memories.</div>
+          <span class="node-tag tag-gold">conversation.rs · memory.rs</span>
+        </div>
+        <div class="node gold">
+          <span class="node-icon">🔑</span>
+          <div class="node-title">Vault Commands</div>
+          <div class="node-sub">vault_create · vault_unlock · vault_lock · vault_set · vault_get · vault_delete · vault_list_keys. encrypt_blob · decrypt_blob.</div>
+          <span class="node-tag tag-gold">commands/vault.rs</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONNECTOR -->
+    <svg class="connector" style="height:44px" viewBox="0 0 1100 44" preserveAspectRatio="none">
+      <defs><marker id="arr-green" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="var(--green)"/></marker></defs>
+      <line x1="550" y1="2" x2="550" y2="42" stroke="var(--green)" stroke-width="1.5" marker-end="url(#arr-green)" stroke-dasharray="5 3" class="animated-path"/>
+      <text x="560" y="26" fill="var(--muted)" font-family="Space Mono" font-size="9" letter-spacing="1">Services layer</text>
+    </svg>
+
+    <!-- LAYER: RUST SERVICES -->
+    <div class="layer">
+      <div class="layer-label" style="color:var(--green)">SERVICES</div>
+      <div class="layer-content">
+        <div class="node green">
+          <span class="node-icon">🔧</span>
+          <div class="node-title">Tool Factory</div>
+          <div class="node-sub">ALL_TOOLS registry. Tier + key gating. tool_descriptions() for system prompt injection. execute_tool() dispatcher.</div>
+          <span class="node-tag tag-green">tools/ · tier gated</span>
+        </div>
+        <div class="node green">
+          <span class="node-icon">🗂️</span>
+          <div class="node-title">Services Layer</div>
+          <div class="node-sub">Business logic — DB queries, crypto. persona.rs · conversation.rs · memory.rs · vault.rs. Thin commands delegate here.</div>
+          <span class="node-tag tag-green">services/ · AppResult&lt;T&gt;</span>
+        </div>
+        <div class="node green">
+          <span class="node-icon">⏰</span>
+          <div class="node-title">Scheduler Engine</div>
+          <div class="node-sub">scheduler_engine.rs loads enabled jobs on startup. Fires on cron. One-shot auto-disable. Telegram delivery via vault chat ID.</div>
+          <span class="node-tag tag-green">scheduler_engine.rs · tokio</span>
+        </div>
+        <div class="node green">
+          <span class="node-icon">📡</span>
+          <div class="node-title">Gateway Handler</div>
+          <div class="node-sub">Gateway trait → shared handler → OutboundMessage. call_llm_direct for all providers. Telegram via teloxide 0.17.</div>
+          <span class="node-tag tag-green">gateway/ · handler.rs</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONNECTOR: split to LLM + Storage -->
+    <svg class="connector" style="height:56px" viewBox="0 0 1100 56" preserveAspectRatio="none">
+      <defs>
+        <marker id="arr-blue2" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="var(--blue)"/></marker>
+        <marker id="arr-purple2" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="var(--purple)"/></marker>
+        <marker id="arr-teal2" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="var(--teal)"/></marker>
+      </defs>
+      <path d="M 310 2 L 310 28 L 160 28 L 160 54" stroke="var(--blue)" stroke-width="1.5" fill="none" marker-end="url(#arr-blue2)" stroke-dasharray="5 3" class="animated-path"/>
+      <text x="40" y="24" fill="var(--blue)" font-family="Space Mono" font-size="9">LLM API</text>
+      <path d="M 550 2 L 550 54" stroke="var(--purple)" stroke-width="1.5" fill="none" marker-end="url(#arr-purple2)" stroke-dasharray="5 3" class="animated-path"/>
+      <text x="560" y="24" fill="var(--purple)" font-family="Space Mono" font-size="9">SQLite</text>
+      <path d="M 780 2 L 780 28 L 930 28 L 930 54" stroke="var(--teal)" stroke-width="1.5" fill="none" marker-end="url(#arr-teal2)" stroke-dasharray="5 3" class="animated-path"/>
+      <text x="800" y="24" fill="var(--teal)" font-family="Space Mono" font-size="9">Gateway</text>
+    </svg>
+
+    <!-- LAYER 3: LLM + STORAGE + GATEWAY -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+
+      <!-- LLM PROVIDERS -->
+      <div>
+        <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--blue);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;text-align:center">LLM Providers</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="node blue">
+            <span class="node-icon">◆</span>
+            <div class="node-title">Anthropic</div>
+            <div class="node-sub">Sonnet 4.6 · Opus 4.6 · Haiku 4.5</div>
+            <span class="node-tag tag-gold">Pioneer+ · vault key</span>
+          </div>
+          <div class="node blue">
+            <span class="node-icon">◆</span>
+            <div class="node-title">Google</div>
+            <div class="node-sub">Gemini 2.5 Flash · 2.0 Flash</div>
+            <span class="node-tag tag-gold">Pioneer+ · vault key</span>
+          </div>
+          <div class="node blue">
+            <span class="node-icon">◆</span>
+            <div class="node-title">OpenAI</div>
+            <div class="node-sub">GPT-4o · GPT-4o mini</div>
+            <span class="node-tag tag-gold">Pioneer+ · vault key</span>
+          </div>
+          <div class="node green">
+            <span class="node-icon">◆</span>
+            <div class="node-title">Ollama</div>
+            <div class="node-sub">qwen3 (preferred) · llama3.2 · gemma4</div>
+            <span class="node-tag tag-green">Scout+ · localhost:11434</span>
+          </div>
+          <div class="node green">
+            <span class="node-icon">◆</span>
+            <div class="node-title">BitNet</div>
+            <div class="node-sub">1-bit quantized · CPU only</div>
+            <span class="node-tag tag-green">Scout+ · localhost:11435</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STORAGE -->
+      <div>
+        <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--purple);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;text-align:center">Local Storage</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="node purple">
+            <span class="node-icon">🗄️</span>
+            <div class="node-title">pathfinder.db</div>
+            <div class="node-sub">SQLite WAL · rusqlite 0.37 bundled · 18 migrations. Tables: personas, conversations, messages, memories, credentials, scheduled_jobs, job_runs, knowledge_chunks, pathfinder_logs.</div>
+            <span class="node-tag tag-purple">app_data_dir/</span>
+          </div>
+          <div class="node gold">
+            <span class="node-icon">🔐</span>
+            <div class="node-title">pathfinder.vault</div>
+            <div class="node-sub">AES-256-GCM · PBKDF2/SHA-256 100k iterations · zeroize on drop. Stores API keys, credentials passwords, gateway config, data folder path.</div>
+            <span class="node-tag tag-gold">app_data_dir/ · never leaves</span>
+          </div>
+          <div class="node purple">
+            <span class="node-icon">📁</span>
+            <div class="node-title">data/ folder</div>
+            <div class="node-sub">memory/ · conversations/ · knowledge/ · journal/ · soul/. Resolved via vault key shared.data_folder.</div>
+            <span class="node-tag tag-purple">C:\aPathfinderTauri\data\</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- GATEWAY / EXTERNAL -->
+      <div>
+        <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;text-align:center">Gateway / External</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="node teal">
+            <span class="node-icon">📱</span>
+            <div class="node-title">Telegram Gateway</div>
+            <div class="node-sub">teloxide 0.17 · polling mode · no public IP. Separate async DB connection. PIN per persona. Sender whitelist. Auto-starts on vault unlock.</div>
+            <span class="node-tag tag-teal">gateway/telegram.rs</span>
+          </div>
+          <div class="node teal">
+            <span class="node-icon">⚡</span>
+            <div class="node-title">n8n Workflows</div>
+            <div class="node-sub">Single global webhook URL. Intent-based routing inside workflow. Chunky payload: intent + query + timestamp + persona context.</div>
+            <span class="node-tag tag-teal">shared.keys.n8n_webhook</span>
+          </div>
+          <div class="node teal">
+            <span class="node-icon">🔍</span>
+            <div class="node-title">Serper / Web Search</div>
+            <div class="node-sub">Google search via Serper API. Tool factory entry. Tier + key gated. Results injected into agent loop context.</div>
+            <span class="node-tag tag-teal">Pioneer+ · shared.keys.serper</span>
+          </div>
+          <div class="node teal">
+            <span class="node-icon">📅</span>
+            <div class="node-title">Google Calendar</div>
+            <div class="node-sub">Read events via n8n + Google OAuth. "What do I have tomorrow?" returns real calendar data.</div>
+            <span class="node-tag tag-teal">via n8n · OAuth2</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- INFORMATION FLOW -->
+  <div class="flow-section">
+    <div class="flow-section-title">Information Flow — A Single Message (Tools ON)</div>
+    <div class="flow-steps">
+      <div class="flow-step s-user">
+        <div class="flow-step-num">01</div>
+        <div class="flow-step-icon">⌨️</div>
+        <div class="flow-step-title">User sends message</div>
+        <div class="flow-step-desc">ChatPanel builds history with system prompt + memories + docs context. Invokes agent_chat.</div>
+      </div>
+      <div class="flow-step s-user">
+        <div class="flow-step-num">02</div>
+        <div class="flow-step-icon">💾</div>
+        <div class="flow-step-title">Memory injected</div>
+        <div class="flow-step-desc">Top 4 persona-scoped memories fetched from SQLite. Injected as system context before LLM call.</div>
+      </div>
+      <div class="flow-step s-rust">
+        <div class="flow-step-num">03</div>
+        <div class="flow-step-icon">🔧</div>
+        <div class="flow-step-title">Agent loop starts</div>
+        <div class="flow-step-desc">Tools filtered by tier + vault keys. Tool descriptions appended to system prompt. call_llm_direct fires.</div>
+      </div>
+      <div class="flow-step s-rust">
+        <div class="flow-step-num">04</div>
+        <div class="flow-step-icon">🔍</div>
+        <div class="flow-step-title">Tool parsed + executed</div>
+        <div class="flow-step-desc">parse_tool_call extracts tool ID + JSON. Tool executes. Result injected as system message. Loop continues.</div>
+      </div>
+      <div class="flow-step s-llm">
+        <div class="flow-step-num">05</div>
+        <div class="flow-step-icon">🤖</div>
+        <div class="flow-step-title">LLM final answer</div>
+        <div class="flow-step-desc">No tool call detected → final response returned. AgentResult with response + tool_calls + iterations.</div>
+      </div>
+      <div class="flow-step s-rust">
+        <div class="flow-step-num">06</div>
+        <div class="flow-step-icon">📝</div>
+        <div class="flow-step-title">Tool calls logged</div>
+        <div class="flow-step-desc">pathfinder_logs table updated. ToolCallRecord[] serialized as tools_used JSON on message row.</div>
+      </div>
+      <div class="flow-step s-storage">
+        <div class="flow-step-num">07</div>
+        <div class="flow-step-icon">💾</div>
+        <div class="flow-step-title">Message saved</div>
+        <div class="flow-step-desc">User + assistant messages written to messages table with model, provider, tools_used.</div>
+      </div>
+      <div class="flow-step s-user">
+        <div class="flow-step-num">08</div>
+        <div class="flow-step-icon">📺</div>
+        <div class="flow-step-title">UI rendered</div>
+        <div class="flow-step-desc">Response rendered with markdown. ToolCallLog.tsx shows collapsible tool call records. Memory count updates.</div>
+      </div>
+      <div class="flow-step s-gateway">
+        <div class="flow-step-num">09</div>
+        <div class="flow-step-icon">📱</div>
+        <div class="flow-step-title">Telegram mirror</div>
+        <div class="flow-step-desc">If triggered via gateway: same pipeline. Response sent back via teloxide. Scheduler jobs deliver same way.</div>
+      </div>
+      <div class="flow-step s-storage">
+        <div class="flow-step-num">10</div>
+        <div class="flow-step-icon">♻️</div>
+        <div class="flow-step-title">Ready</div>
+        <div class="flow-step-desc">All state persisted in SQLite WAL. Vault remains unlocked in RAM. Gateway polling continues.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILE TREE -->
+  <div class="file-tree-section">
+    <div class="file-tree-card">
+      <div class="file-tree-title">Rust Project Structure</div>
+      <div class="tree">
+<span class="dir">src-tauri/src/</span>
+├── <span class="file-rs">main.rs</span>         <span class="comment">← entry, calls lib::run()</span>
+├── <span class="file-rs">lib.rs</span>          <span class="comment">← AppState, builder, invoke_handler</span>
+├── <span class="file-rs">db.rs</span>           <span class="comment">← SQLite open, 18 migrations, seed</span>
+├── <span class="file-rs">error.rs</span>        <span class="comment">← AppError enum, AppResult&lt;T&gt;</span>
+├── <span class="dir">commands/</span>       <span class="comment">← thin Tauri handlers</span>
+│   ├── <span class="file-rs">agent.rs</span>     <span class="comment">← agent loop + parse_tool_call</span>
+│   ├── <span class="file-rs">persona.rs</span></span>
+│   ├── <span class="file-rs">vault.rs</span>
+│   ├── <span class="file-rs">memory.rs</span>
+│   └── <span class="file-rs">logs.rs</span>
+├── <span class="dir">services/</span>       <span class="comment">← business logic</span>
+├── <span class="dir">gateway/</span>        <span class="comment">← Gateway trait + teloxide</span>
+│   ├── <span class="file-rs">handler.rs</span>   <span class="comment">← call_llm_direct</span>
+│   └── <span class="file-rs">telegram.rs</span>
+├── <span class="dir">tools/</span>          <span class="comment">← ALL_TOOLS registry</span>
+└── <span class="file-rs">scheduler_engine.rs</span>
+      </div>
+    </div>
+    <div class="file-tree-card">
+      <div class="file-tree-title">Frontend Structure</div>
+      <div class="tree">
+<span class="dir">src/</span>
+├── <span class="file-ts">App.tsx</span>          <span class="comment">← vault gate · first-run</span>
+├── <span class="dir">components/</span>
+│   ├── <span class="dir">layout/</span>
+│   │   └── <span class="file-ts">AppShell.tsx</span> <span class="comment">← main shell</span>
+│   ├── <span class="dir">chat/</span>
+│   │   └── <span class="file-ts">ChatPanel.tsx</span>
+│   ├── <span class="dir">settings/</span>
+│   │   └── <span class="file-ts">Settings.tsx</span> <span class="comment">← PANEL_REGISTRY</span>
+│   └── <span class="dir">ui/</span>
+│       └── <span class="file-ts">VaultUnlock.tsx</span>
+├── <span class="dir">services/</span>        <span class="comment">← invoke() wrappers only</span>
+│   ├── <span class="file-ts">LLMService.ts</span>
+│   ├── <span class="file-ts">VaultService.ts</span>
+│   └── <span class="dir">providers/</span>
+└── <span class="dir">types/</span>           <span class="comment">← mirror Rust structs</span>
+
+<span class="dir">data/</span>            <span class="comment">← local user data</span>
+├── <span class="dir">memory/</span>   <span class="dir">knowledge/</span>
+├── <span class="dir">journal/</span>  <span class="dir">conversations/</span>
+└── <span class="dir">soul/</span>
+
+<span class="encrypted">pathfinder.vault</span>  <span class="comment">← AES-256-GCM</span>
+<span class="file-json">pathfinder.db</span>     <span class="comment">← SQLite WAL</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROADMAP -->
+  <div class="roadmap">
+    <div class="roadmap-title">Build Blocks — Pathfinder v0.1.5</div>
+    <div class="roadmap-track">
+      <div class="phase-card done"><div class="phase-dot"></div><div class="phase-num">BLOCK 1</div><div class="phase-name">Scaffold</div><div class="phase-desc">Tauri 2 · Rust · React 19 · SQLite · Vault · AppState</div></div>
+      <div class="phase-card done"><div class="phase-dot"></div><div class="phase-num">BLOCK 2</div><div class="phase-name">Frontend Shell</div><div class="phase-desc">Vault gate · 5 LLM providers · streaming · memory injection</div></div>
+      <div class="phase-card done"><div class="phase-dot"></div><div class="phase-num">BLOCK 3</div><div class="phase-name">Gateway</div><div class="phase-desc">Telegram · teloxide · PIN auth · persona routing · vault resolution</div></div>
+      <div class="phase-card done"><div class="phase-dot"></div><div class="phase-num">BLOCK 4</div><div class="phase-name">Scheduler</div><div class="phase-desc">Cron engine · one-shot · Telegram delivery · job run history</div></div>
+      <div class="phase-card done"><div class="phase-dot"></div><div class="phase-num">BLOCK 5</div><div class="phase-name">Agent Loop</div><div class="phase-desc">Tool factory · web search · n8n · agent loop · brace-match parser · 10 unit tests</div></div>
+      <div class="phase-card done"><div class="phase-dot"></div><div class="phase-num">BLOCK 6</div><div class="phase-name">Skills</div><div class="phase-desc">Folder pipeline · skill.json manifest · Morning Brief · Research</div></div>
+      <div class="phase-card done"><div class="phase-dot"></div><div class="phase-num">BLOCK 7</div><div class="phase-name">Trailhead</div><div class="phase-desc">Eagle persona · doc context injection · RAG · PATHFINDER_GUIDE.md</div></div>
+      <div class="phase-card done"><div class="phase-dot"></div><div class="phase-num">BLOCK 8</div><div class="phase-name">RAG</div><div class="phase-desc">knowledge_chunks · BM25 · auto-index docs/ on startup · document_search tool</div></div>
+      <div class="phase-card done"><div class="phase-dot"></div><div class="phase-num">BLOCK 9</div><div class="phase-name">Installer</div><div class="phase-desc">First-run wizard · env scan · tier auto-detect · NSIS installer · 9b Credentials</div></div>
+      <div class="phase-card current"><div class="phase-dot"></div><div class="phase-num">BLOCK 10</div><div class="phase-name">Android</div><div class="phase-desc">Tauri Android target · Samsung Galaxy Tab sideload APK</div></div>
+      <div class="phase-card next"><div class="phase-dot"></div><div class="phase-num">BLOCK 11</div><div class="phase-name">Dev Readiness</div><div class="phase-desc">Architecture docs · gateway walkthrough · GitHub Actions CI · mock LLM mode</div></div>
+      <div class="phase-card next"><div class="phase-dot"></div><div class="phase-num">BLOCK 12</div><div class="phase-name">Community</div><div class="phase-desc">Blockchain ledger · contribution approval · CLA · public launch</div></div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

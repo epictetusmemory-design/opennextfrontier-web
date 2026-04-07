@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pathfinder vs OpenClaw — Gap Analysis · OpenNextFrontier</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080b10;
+    --bg2: #0d1117;
+    --bg3: #131920;
+    --border: #1e2730;
+    --border2: #2a3540;
+    --text: #e8edf2;
+    --muted: #7a8a96;
+    --muted2: #4a5a66;
+    --pf: #c8a96e;
+    --pf2: #a07830;
+    --pf-dim: rgba(200,169,110,0.08);
+    --pf-mid: rgba(200,169,110,0.18);
+    --claw: #ff6b6b;
+    --claw2: #cc5555;
+    --claw-dim: rgba(255,107,107,0.08);
+    --gold: #e8b84b;
+    --gold-dim: rgba(232,184,75,0.1);
+    --blue: #4a9eff;
+    --purple: #9b7aff;
+    --green: #4ade80;
+    --amber: #fbbf24;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(200,169,110,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,169,110,0.025) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: #04153f;
+    padding: 10px 32px;
+    display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+    border-bottom: 2px solid rgba(200,169,110,.3);
+  }
+  nav a { font-family: 'DM Mono', monospace; font-size: 10px; color: rgba(255,255,255,.55); text-decoration: none; padding: 4px 10px; letter-spacing: .08em; }
+  nav a:hover, nav a.active { color: #c8a96e; }
+  nav .brand { font-size: 13px; font-weight: 700; color: #fff; letter-spacing: .12em; margin-right: 20px; }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  /* HEADER */
+  .header { text-align: center; margin-bottom: 56px; animation: fadeUp 0.6s ease both; }
+  .header-eyebrow { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: var(--pf); text-transform: uppercase; margin-bottom: 16px; opacity: 0.8; }
+  .header h1 { font-family: 'Playfair Display', serif; font-size: clamp(36px, 5vw, 60px); font-weight: 900; line-height: 1.1; margin-bottom: 12px; }
+  .header h1 span.pf-word { color: var(--pf); }
+  .header h1 span.vs { color: var(--muted2); font-size: 0.6em; vertical-align: middle; }
+  .header h1 span.claw-word { color: var(--claw); }
+  .header-sub { font-size: 14px; color: var(--muted); margin-top: 8px; }
+  .version-badge { display: inline-block; margin-top: 16px; padding: 4px 14px; border: 1px solid var(--pf); border-radius: 20px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--pf); letter-spacing: 0.1em; }
+
+  /* SCORE CARDS */
+  .score-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 40px; animation: fadeUp 0.6s 0.1s ease both; }
+  .score-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 24px; text-align: center; position: relative; overflow: hidden; }
+  .score-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .score-card.pf-card::before { background: var(--pf); }
+  .score-card.claw-card::before { background: var(--claw); }
+  .score-card.gap-card::before { background: var(--amber); }
+  .score-num { font-family: 'Playfair Display', serif; font-size: 52px; font-weight: 900; line-height: 1; margin-bottom: 4px; }
+  .score-card.pf-card .score-num { color: var(--pf); }
+  .score-card.claw-card .score-num { color: var(--claw); }
+  .score-card.gap-card .score-num { color: var(--amber); }
+  .score-label { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; letter-spacing: 0.05em; }
+  .score-sub { font-size: 11px; color: var(--muted2); margin-top: 6px; }
+
+  /* PROGRESS */
+  .progress-section { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 24px 28px; margin-bottom: 40px; animation: fadeUp 0.6s 0.15s ease both; }
+  .progress-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .progress-title { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+  .progress-pct { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--pf); font-weight: 700; }
+  .progress-bar-bg { background: var(--bg3); border-radius: 4px; height: 8px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--pf2), var(--pf)); width: 0%; transition: width 1.2s cubic-bezier(0.4,0,0.2,1); }
+  .progress-phases { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .phase-pip { display: flex; align-items: center; gap: 6px; font-family: 'DM Mono', monospace; font-size: 10px; padding: 4px 10px; border-radius: 20px; border: 1px solid; }
+  .phase-pip.done { border-color: var(--pf); color: var(--pf); background: var(--pf-dim); }
+  .phase-pip.current { border-color: var(--amber); color: var(--amber); background: rgba(251,191,36,0.08); }
+  .phase-pip.pending { border-color: var(--border2); color: var(--muted2); }
+  .phase-pip .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .phase-pip.done .dot { background: var(--pf); }
+  .phase-pip.current .dot { background: var(--amber); }
+  .phase-pip.pending .dot { background: var(--muted2); }
+
+  /* SECTION TITLE */
+  .section-title { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.15em; color: var(--muted2); text-transform: uppercase; margin-bottom: 16px; padding-left: 4px; }
+
+  /* LEGEND */
+  .legend { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 12px; padding: 12px 16px; background: var(--bg3); border-radius: 8px; border: 1px solid var(--border); }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+  /* COMPARISON TABLE */
+  .comparison-grid { display: grid; gap: 3px; margin-bottom: 40px; animation: fadeUp 0.6s 0.2s ease both; }
+  .comp-header { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 3px; margin-bottom: 6px; }
+  .comp-header-cell { padding: 10px 16px; border-radius: 6px; font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.05em; text-align: center; }
+  .comp-header-cell.pf-h { background: var(--pf-dim); color: var(--pf); border: 1px solid rgba(200,169,110,0.2); }
+  .comp-header-cell.claw-h { background: var(--claw-dim); color: var(--claw); border: 1px solid rgba(255,107,107,0.2); }
+  .comp-header-cell.layer-h { background: var(--bg3); color: var(--muted); border: 1px solid var(--border); text-align: left; }
+  .comp-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 3px; }
+  .comp-row.section-row { margin-top: 8px; }
+  .comp-cell { padding: 11px 16px; border-radius: 6px; font-size: 12px; background: var(--bg2); border: 1px solid var(--border); }
+  .comp-cell.feature-cell { color: var(--text); font-weight: 500; }
+  .comp-cell.layer-tag { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted2); letter-spacing: 0.05em; background: var(--bg3); }
+  .comp-cell.status-cell { text-align: center; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .status-icon { font-size: 14px; }
+  .status-text { font-family: 'DM Mono', monospace; font-size: 10px; }
+  .pf-built { background: var(--pf-dim); border-color: rgba(200,169,110,0.15); color: var(--pf); }
+  .pf-partial { background: rgba(251,191,36,0.06); border-color: rgba(251,191,36,0.15); color: var(--amber); }
+  .pf-unique { background: rgba(200,169,110,0.12); border-color: rgba(200,169,110,0.25); color: var(--gold); }
+  .claw-built { background: var(--claw-dim); border-color: rgba(255,107,107,0.15); color: var(--claw); }
+  .both-built { background: rgba(74,158,255,0.06); border-color: rgba(74,158,255,0.15); color: var(--blue); }
+  .not-built { background: var(--bg3); border-color: var(--border); color: var(--muted2); }
+
+  /* ADVANTAGES */
+  .advantages-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 40px; animation: fadeUp 0.6s 0.25s ease both; }
+  .adv-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 20px; position: relative; overflow: hidden; transition: border-color 0.2s; }
+  .adv-card:hover { border-color: var(--pf); }
+  .adv-card::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--pf), transparent); opacity: 0; transition: opacity 0.2s; }
+  .adv-card:hover::after { opacity: 1; }
+  .adv-icon { font-size: 24px; margin-bottom: 10px; }
+  .adv-title { font-weight: 600; font-size: 13px; color: var(--pf); margin-bottom: 6px; }
+  .adv-desc { font-size: 12px; color: var(--muted); line-height: 1.55; }
+  .adv-star { position: absolute; top: 14px; right: 14px; font-family: 'DM Mono', monospace; font-size: 9px; color: var(--gold); background: var(--gold-dim); border: 1px solid rgba(232,184,75,0.2); border-radius: 10px; padding: 2px 8px; letter-spacing: 0.05em; }
+
+  /* ROADMAP */
+  .roadmap { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 40px; animation: fadeUp 0.6s 0.3s ease both; }
+  .roadmap-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+  .roadmap-card.done { opacity: 0.6; border-color: var(--pf2); }
+  .roadmap-card.done .roadmap-phase { color: var(--pf); }
+  .roadmap-card.current { border-color: var(--amber); }
+  .roadmap-card.current .roadmap-phase { color: var(--amber); }
+  .roadmap-phase { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted2); letter-spacing: 0.1em; margin-bottom: 8px; }
+  .roadmap-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+  .roadmap-items { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+  .roadmap-items li { font-size: 11px; color: var(--muted); display: flex; align-items: flex-start; gap: 6px; }
+  .roadmap-items li::before { content: '→'; color: var(--muted2); font-family: 'DM Mono', monospace; font-size: 10px; flex-shrink: 0; margin-top: 1px; }
+
+  /* VERDICT */
+  .verdict { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 28px 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; animation: fadeUp 0.6s 0.35s ease both; position: relative; overflow: hidden; margin-bottom: 40px; }
+  .verdict::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--pf), var(--purple), var(--claw)); }
+  .verdict-side h3 { font-family: 'Playfair Display', serif; font-size: 18px; margin-bottom: 12px; }
+  .verdict-side.pf-side h3 { color: var(--pf); }
+  .verdict-side.claw-side h3 { color: var(--claw); }
+  .verdict-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+  .verdict-list li { font-size: 12px; color: var(--muted); display: flex; gap: 8px; line-height: 1.5; }
+  .verdict-list li .bullet { flex-shrink: 0; font-family: 'DM Mono', monospace; font-size: 10px; margin-top: 2px; }
+  .pf-side .bullet { color: var(--pf); }
+  .claw-side .bullet { color: var(--claw); }
+
+  /* STATS BAR */
+  .stats-bar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 32px; padding-top: 32px; border-top: 1px solid var(--border); animation: fadeUp 0.6s 0.4s ease both; }
+  .stat { text-align: center; }
+  .stat-num { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--pf); line-height: 1; margin-bottom: 4px; }
+  .stat-label { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted2); letter-spacing: 0.08em; text-transform: uppercase; }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  @media (max-width: 768px) {
+    .score-row, .advantages-grid, .roadmap { grid-template-columns: 1fr; }
+    .verdict { grid-template-columns: 1fr; }
+    .stats-bar { grid-template-columns: repeat(3, 1fr); }
+    .comp-header, .comp-row { grid-template-columns: 1.5fr 1fr 1fr; }
+    .comp-cell.layer-tag { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="brand">🦅 PATHFINDER</span>
+  <a href="index.html">Home</a>
+  <a href="architecture.html">Architecture</a>
+  <a href="wirediagram.html">Wire Diagram</a>
+  <a href="layers.html">Layer Map</a>
+  <a href="components.html">Components</a>
+  <a href="capabilities.html">Capabilities</a>
+  <a href="openclaw.html" class="active">vs OpenClaw</a>
+</nav>
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-eyebrow">Capability Gap Analysis · v0.1.5 · April 2026</div>
+    <h1>
+      <span class="pf-word">Pathfinder</span>
+      <span class="vs"> vs </span>
+      <span class="claw-word">OpenClaw</span>
+    </h1>
+    <div class="header-sub">All 9 blocks complete — Tauri 2 · Rust · SQLite · Telegram gateway · Scheduler · Skills · RAG · Credentials · First-run</div>
+    <div class="version-badge">v0.1.5 — Block 9 Complete</div>
+  </div>
+
+  <!-- SCORE CARDS -->
+  <div class="score-row">
+    <div class="score-card pf-card">
+      <div class="score-num">58</div>
+      <div class="score-label">Pathfinder Capabilities</div>
+      <div class="score-sub">↑20 since Phase 7g</div>
+    </div>
+    <div class="score-card claw-card">
+      <div class="score-num">34</div>
+      <div class="score-label">OpenClaw Capabilities</div>
+      <div class="score-sub">Stable baseline</div>
+    </div>
+    <div class="score-card gap-card">
+      <div class="score-num">4</div>
+      <div class="score-label">Remaining Gaps</div>
+      <div class="score-sub">↓10 since Phase 7g</div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-section">
+    <div class="progress-label">
+      <span class="progress-title">Build Progress to OpenClaw Parity</span>
+      <span class="progress-pct">97%</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-phases">
+      <div class="phase-pip done"><div class="dot"></div>Block 1 — Scaffold</div>
+      <div class="phase-pip done"><div class="dot"></div>Block 2 — Frontend</div>
+      <div class="phase-pip done"><div class="dot"></div>Block 3 — Gateway</div>
+      <div class="phase-pip done"><div class="dot"></div>Block 4 — Scheduler</div>
+      <div class="phase-pip done"><div class="dot"></div>Block 5 — Agent Loop</div>
+      <div class="phase-pip done"><div class="dot"></div>Block 6 — Skills</div>
+      <div class="phase-pip done"><div class="dot"></div>Block 7 — Trailhead</div>
+      <div class="phase-pip done"><div class="dot"></div>Block 8 — RAG</div>
+      <div class="phase-pip done"><div class="dot"></div>Block 9 — Installer + Credentials</div>
+      <div class="phase-pip current"><div class="dot"></div>Block 10 — Android</div>
+      <div class="phase-pip pending"><div class="dot"></div>Block 11 — Dev Readiness</div>
+      <div class="phase-pip pending"><div class="dot"></div>Block 12 — Community</div>
+    </div>
+  </div>
+
+  <!-- COMPARISON TABLE -->
+  <div class="section-title">Layer-by-Layer Capability Comparison</div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--pf)"></div>Pathfinder Built</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Pathfinder Unique Advantage</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>Pathfinder Partial</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--claw)"></div>OpenClaw Only</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>Both Built</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--muted2)"></div>Not Yet Built</div>
+  </div>
+
+  <div class="comparison-grid">
+    <div class="comp-header">
+      <div class="comp-header-cell layer-h">Capability</div>
+      <div class="comp-header-cell layer-h">Layer</div>
+      <div class="comp-header-cell pf-h">🦅 Pathfinder</div>
+      <div class="comp-header-cell claw-h">🦀 OpenClaw</div>
+    </div>
+
+    <!-- L1 INFRASTRUCTURE -->
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">Native desktop app (Tauri 2)</div>
+      <div class="comp-cell layer-tag">L1 INFRA</div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Unique</span></div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">—</span><span class="status-text">Web only</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">Rust backend — memory safe, zero GC</div>
+      <div class="comp-cell layer-tag">L1 INFRA</div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Unique</span></div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">—</span><span class="status-text">Node.js</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">SQLite WAL — rusqlite bundled</div>
+      <div class="comp-cell layer-tag">L1 INFRA</div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Unique</span></div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">—</span><span class="status-text">JSON files</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">NSIS installer — single .exe</div>
+      <div class="comp-cell layer-tag">L1 INFRA</div>
+      <div class="comp-cell status-cell pf-built"><span class="status-icon">✓</span><span class="status-text">Built</span></div>
+      <div class="comp-cell status-cell claw-built"><span class="status-icon">✓</span><span class="status-text">Docker</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">First-run wizard + tier auto-detect</div>
+      <div class="comp-cell layer-tag">L1 INFRA</div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Unique</span></div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">—</span><span class="status-text">No</span></div>
+    </div>
+
+    <!-- L2 GATEWAYS -->
+    <div class="comp-row section-row">
+      <div class="comp-cell feature-cell">Telegram gateway — teloxide · PIN auth</div>
+      <div class="comp-cell layer-tag">L2 GATEWAY</div>
+      <div class="comp-cell status-cell pf-built"><span class="status-icon">✓</span><span class="status-text">Built</span></div>
+      <div class="comp-cell status-cell claw-built"><span class="status-icon">✓</span><span class="status-text">Built</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">Intent tokens — memory: journal: note: find: card: password: doc:</div>
+      <div class="comp-cell layer-tag">L2 GATEWAY</div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Unique</span></div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">—</span><span class="status-text">No</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">Media capture — photo · voice · document</div>
+      <div class="comp-cell layer-tag">L2 GATEWAY</div>
+      <div class="comp-cell status-cell pf-built"><span class="status-icon">✓</span><span class="status-text">Built</span></div>
+      <div class="comp-cell status-cell claw-built"><span class="status-icon">✓</span><span class="status-text">Built</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">Gateway trait — pluggable transports</div>
+      <div class="comp-cell layer-tag">L2 GATEWAY</div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Unique</span></div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">—</span><span class="status-text">No</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">WhatsApp / iMessage gateway</div>
+      <div class="comp-cell layer-tag">L2 GATEWAY</div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">○</span><span class="status-text">Planned</span></div>
+      <div class="comp-cell status-cell claw-built"><span class="status-icon">✓</span><span class="status-text">Built</span></div>
+    </div>
+
+    <!-- L3 PROTOCOL -->
+    <div class="comp-row section-row">
+      <div class="comp-cell feature-cell">n8n workflow middleware</div>
+      <div class="comp-cell layer-tag">L3 PROTOCOL</div>
+      <div class="comp-cell status-cell pf-built"><span class="status-icon">✓</span><span class="status-text">Built</span></div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">—</span><span class="status-text">Different</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">Tool factory — tier + key gated</div>
+      <div class="comp-cell layer-tag">L3 PROTOCOL</div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Unique</span></div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">—</span><span class="status-text">No</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">MCP server integration</div>
+      <div class="comp-cell layer-tag">L3 PROTOCOL</div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">○</span><span class="status-text">Feature 19</span></div>
+      <div class="comp-cell status-cell claw-built"><span class="status-icon">✓</span><span class="status-text">Built</span></div>
+    </div>
+
+    <!-- L4 TOOLING -->
+    <div class="comp-row section-row">
+      <div class="comp-cell feature-cell">Web search — Serper API</div>
+      <div class="comp-cell layer-tag">L4 TOOLING</div>
+      <div class="comp-cell status-cell pf-built"><span class="status-icon">✓</span><span class="status-text">Built</span></div>
+      <div class="comp-cell status-cell claw-built"><span class="status-icon">✓</span><span class="status-text">Built</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">Google Calendar read</div>
+      <div class="comp-cell layer-tag">L4 TOOLING</div>
+      <div class="comp-cell status-cell pf-built"><span class="status-icon">✓</span><span class="status-text">Built</span></div>
+      <div class="comp-cell status-cell claw-built"><span class="status-icon">✓</span><span class="status-text">Built</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">Document search — BM25 · knowledge_chunks</div>
+      <div class="comp-cell layer-tag">L4 TOOLING</div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Unique</span></div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">—</span><span class="status-text">No</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">Calculator — built-in, no API</div>
+      <div class="comp-cell layer-tag">L4 TOOLING</div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Unique</span></div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">—</span><span class="status-text">No</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">400+ n8n integrations</div>
+      <div class="comp-cell layer-tag">L4 TOOLING</div>
+      <div class="comp-cell status-cell pf-built"><span class="status-icon">✓</span><span class="status-text">Via n8n</span></div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">—</span><span class="status-text">ClawHub</span></div>
+    </div>
+
+    <!-- L5 COGNITION -->
+    <div class="comp-row section-row">
+      <div class="comp-cell feature-cell">Agent loop — up to 5 iterations · dedup · fallback</div>
+      <div class="comp-cell layer-tag">L5 COGNITION</div>
+      <div class="comp-cell status-cell pf-built"><span class="status-icon">✓</span><span class="status-text">Built</span></div>
+      <div class="comp-cell status-cell claw-built"><span class="status-icon">✓</span><span class="status-text">Built</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">Multi-persona cognition — per-persona LLM + system prompt</div>
+      <div class="comp-cell layer-tag">L5 COGNITION</div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Unique</span></div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">—</span><span class="status-text">No</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">Brace-matching parser fallback — qwen3 robustness</div>
+      <div class="comp-cell layer-tag">L5 COGNITION</div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Unique</span></div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">—</span><span class="status-text">No</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">5 LLM providers — Claude · GPT · Gemini · Ollama · BitNet</div>
+      <div class="comp-cell layer-tag">L5 COGNITION</div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">5 providers</span></div>
+      <div class="comp-cell status-cell both-built"><span class="status-icon">✓</span><span class="status-text">Fewer</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">Trailhead — built-in AI guide persona</div>
+      <div class="comp-cell layer-tag">L5 COGNITION</div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Unique</span></div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">—</span><span class="status-text">No</span></div>
+    </div>
+
+    <!-- L6 MEMORY -->
+    <div class="comp-row section-row">
+      <div class="comp-cell feature-cell">Persona-scoped memory isolation</div>
+      <div class="comp-cell layer-tag">L6 MEMORY</div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Unique</span></div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">—</span><span class="status-text">No</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">BM25 keyword search — knowledge_chunks</div>
+      <div class="comp-cell layer-tag">L6 MEMORY</div>
+      <div class="comp-cell status-cell pf-built"><span class="status-icon">✓</span><span class="status-text">Built</span></div>
+      <div class="comp-cell status-cell claw-built"><span class="status-icon">✓</span><span class="status-text">Built</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">Auto-index docs/ on startup</div>
+      <div class="comp-cell layer-tag">L6 MEMORY</div>
+      <div class="comp-cell status-cell pf-built"><span class="status-icon">✓</span><span class="status-text">Built</span></div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">—</span><span class="status-text">No</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">AES-256-GCM vault — PBKDF2 · zeroize on drop</div>
+      <div class="comp-cell layer-tag">L6 MEMORY</div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Unique</span></div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">—</span><span class="status-text">No</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">Credentials manager — passwords in vault · pfcreds format</div>
+      <div class="comp-cell layer-tag">L6 MEMORY</div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Unique</span></div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">—</span><span class="status-text">No</span></div>
+    </div>
+
+    <!-- L7 APPLICATION -->
+    <div class="comp-row section-row">
+      <div class="comp-cell feature-cell">Multi-persona identity — emoji · color · model · tier</div>
+      <div class="comp-cell layer-tag">L7 APP</div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Unique</span></div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">—</span><span class="status-text">No</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">Skills system — folder pipeline · skill.json manifest</div>
+      <div class="comp-cell layer-tag">L7 APP</div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Unique</span></div>
+      <div class="comp-cell status-cell claw-built"><span class="status-icon">✓</span><span class="status-text">ClawHub</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">Scheduler — cron · one-shot · Telegram delivery</div>
+      <div class="comp-cell layer-tag">L7 APP</div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Unique</span></div>
+      <div class="comp-cell status-cell claw-built"><span class="status-icon">✓</span><span class="status-text">Built</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">Conversation sidebar · auto-title · history</div>
+      <div class="comp-cell layer-tag">L7 APP</div>
+      <div class="comp-cell status-cell pf-built"><span class="status-icon">✓</span><span class="status-text">Built</span></div>
+      <div class="comp-cell status-cell claw-built"><span class="status-icon">✓</span><span class="status-text">Built</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">Logs panel — tool calls · job runs · SQL · web searches</div>
+      <div class="comp-cell layer-tag">L7 APP</div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Unique</span></div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">—</span><span class="status-text">No</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">Mobile / cross-device access</div>
+      <div class="comp-cell layer-tag">L7 APP</div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">○</span><span class="status-text">Block 10</span></div>
+      <div class="comp-cell status-cell claw-built"><span class="status-icon">✓</span><span class="status-text">Built</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">Voice I/O</div>
+      <div class="comp-cell layer-tag">L7 APP</div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">○</span><span class="status-text">Future</span></div>
+      <div class="comp-cell status-cell claw-built"><span class="status-icon">✓</span><span class="status-text">Built</span></div>
+    </div>
+
+    <!-- L8 GOVERNANCE -->
+    <div class="comp-row section-row">
+      <div class="comp-cell feature-cell">Sovereignty by design — architecture, not policy</div>
+      <div class="comp-cell layer-tag">L8 GOVERN</div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Unique</span></div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">—</span><span class="status-text">Partial</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">4-tier security model — Settler · Scout · Pioneer · Explorer</div>
+      <div class="comp-cell layer-tag">L8 GOVERN</div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Unique</span></div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">—</span><span class="status-text">No</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">Per-persona key overrides — resolution chain UI</div>
+      <div class="comp-cell layer-tag">L8 GOVERN</div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">Unique</span></div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">—</span><span class="status-text">No</span></div>
+    </div>
+    <div class="comp-row">
+      <div class="comp-cell feature-cell">AGPL v3 open source + commercial dual license</div>
+      <div class="comp-cell layer-tag">L8 GOVERN</div>
+      <div class="comp-cell status-cell pf-unique"><span class="status-icon">★</span><span class="status-text">AGPL v3</span></div>
+      <div class="comp-cell status-cell not-built"><span class="status-icon">—</span><span class="status-text">Unknown</span></div>
+    </div>
+  </div>
+
+  <!-- UNIQUE ADVANTAGES -->
+  <div class="section-title">Pathfinder's Unique Advantages</div>
+  <div class="advantages-grid">
+    <div class="adv-card">
+      <div class="adv-star">UNIQUE</div>
+      <div class="adv-icon">🎭</div>
+      <div class="adv-title">Multi-Persona Identity</div>
+      <div class="adv-desc">Switch between Personal, Corporate, Hobby personas — each a different mind with its own model, system prompt, tone, tier, and key overrides. OpenClaw has one identity.</div>
+    </div>
+    <div class="adv-card">
+      <div class="adv-star">UNIQUE</div>
+      <div class="adv-icon">🏛️</div>
+      <div class="adv-title">Sovereignty by Architecture</div>
+      <div class="adv-desc">Scout tier blocks cloud LLMs at the Rust command layer — not a config flag. AES-256-GCM vault, PBKDF2, zeroize on drop. Your data's privacy is enforced in code, not promised in a policy.</div>
+    </div>
+    <div class="adv-card">
+      <div class="adv-star">UNIQUE</div>
+      <div class="adv-icon">🔑</div>
+      <div class="adv-title">Credentials Manager</div>
+      <div class="adv-desc">Passwords stored in vault at shared.credentials.{id}.password — never in the database. pfcreds format is AES-256-GCM JSON blob. CSV import/export. Retrieve from Telegram with password: intent.</div>
+    </div>
+    <div class="adv-card">
+      <div class="adv-star">UNIQUE</div>
+      <div class="adv-icon">🦀</div>
+      <div class="adv-title">Rust + Tauri Native</div>
+      <div class="adv-desc">Not a web app. Not an Electron app. Tauri 2 with Rust backend — memory safe, zero garbage collector, native OS integration, bundled SQLite with no system dependency.</div>
+    </div>
+    <div class="adv-card">
+      <div class="adv-star">UNIQUE</div>
+      <div class="adv-icon">📚</div>
+      <div class="adv-title">Trailhead — Self-Aware AI</div>
+      <div class="adv-desc">Pre-installed Eagle persona that knows Pathfinder intimately. Docs auto-indexed at startup, RAG-injected into every query. Ask Pathfinder how to use Pathfinder — it answers from documentation.</div>
+    </div>
+    <div class="adv-card">
+      <div class="adv-star">UNIQUE</div>
+      <div class="adv-icon">⏰</div>
+      <div class="adv-title">Cron Scheduler</div>
+      <div class="adv-desc">AI jobs that run while you sleep. Morning briefs, research digests, reminders — all delivered to Telegram. One-shot or recurring. Per-job history. Survives app restart.</div>
+    </div>
+  </div>
+
+  <!-- ROADMAP -->
+  <div class="section-title">Build Roadmap — Where We Are</div>
+  <div class="roadmap">
+    <div class="roadmap-card done">
+      <div class="roadmap-phase">BLOCKS 1–9 ✓ ALL DONE</div>
+      <div class="roadmap-title">Foundation Complete</div>
+      <ul class="roadmap-items">
+        <li>Tauri 2 · Rust · SQLite · Vault</li>
+        <li>5 LLM providers · streaming</li>
+        <li>Telegram gateway · intent tokens</li>
+        <li>Scheduler · Skills · RAG · Credentials</li>
+        <li>First-run wizard · NSIS installer</li>
+      </ul>
+    </div>
+    <div class="roadmap-card current">
+      <div class="roadmap-phase">BLOCK 10 ← NOW</div>
+      <div class="roadmap-title">Android</div>
+      <ul class="roadmap-items">
+        <li>Tauri Android target</li>
+        <li>Samsung Galaxy Tab sideload APK</li>
+        <li>Mobile-first gateway testing</li>
+      </ul>
+    </div>
+    <div class="roadmap-card">
+      <div class="roadmap-phase">BLOCK 11</div>
+      <div class="roadmap-title">Developer Readiness</div>
+      <ul class="roadmap-items">
+        <li>Architecture docs · gateway walkthrough</li>
+        <li>GitHub Actions CI · cargo test on every PR</li>
+        <li>Mock LLM mode · dev vault seeder</li>
+        <li>Echo gateway reference implementation</li>
+        <li>CONTRIBUTING.md · issue templates</li>
+      </ul>
+    </div>
+    <div class="roadmap-card">
+      <div class="roadmap-phase">BLOCK 12 — GATED</div>
+      <div class="roadmap-title">Community Contributions</div>
+      <ul class="roadmap-items">
+        <li>Blockchain contribution ledger</li>
+        <li>CLA + on-chain record before merge</li>
+        <li>Branch protection · merge authority</li>
+        <li>Public announcement</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- VERDICT -->
+  <div class="verdict">
+    <div class="verdict-side pf-side">
+      <h3>🦅 Pathfinder Leads On</h3>
+      <ul class="verdict-list">
+        <li><span class="bullet">✦</span>Multi-persona identity — no competitor has this</li>
+        <li><span class="bullet">✦</span>Sovereignty by architecture — code enforces it, not policy</li>
+        <li><span class="bullet">✦</span>Native Rust desktop — Tauri 2, SQLite, zero GC</li>
+        <li><span class="bullet">✦</span>AES-256 vault + credentials manager built-in</li>
+        <li><span class="bullet">✦</span>5 LLM providers including BitNet CPU inference</li>
+        <li><span class="bullet">✦</span>Trailhead self-aware AI guide — RAG on own docs</li>
+        <li><span class="bullet">✦</span>Skills pipeline — folder-based, no Rust required</li>
+        <li><span class="bullet">✦</span>Logs panel — full transparency on every tool call</li>
+        <li><span class="bullet">✦</span>Intent tokens — rich Telegram interaction protocol</li>
+        <li><span class="bullet">✦</span>Tool factory pattern — tier + key gated, extensible</li>
+        <li><span class="bullet">✦</span>Dual license — AGPL v3 + commercial</li>
+      </ul>
+    </div>
+    <div class="verdict-side claw-side">
+      <h3>🦀 OpenClaw Still Leads On</h3>
+      <ul class="verdict-list">
+        <li><span class="bullet">→</span>Mobile access — works on phone out of the box</li>
+        <li><span class="bullet">→</span>Multi-channel — WhatsApp, iMessage alongside Telegram</li>
+        <li><span class="bullet">→</span>Voice — built-in speech I/O</li>
+        <li><span class="bullet">→</span>MCP server integration — native protocol support</li>
+        <li><span class="bullet">→</span>ClawHub plugin ecosystem — community-built integrations</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- STATS BAR -->
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-num">9</div>
+      <div class="stat-label">Blocks Complete</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">14</div>
+      <div class="stat-label">Unique Advantages</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">5</div>
+      <div class="stat-label">LLM Providers</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">97%</div>
+      <div class="stat-label">Parity Achieved</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">∞</div>
+      <div class="stat-label">Data Ownership</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      document.getElementById('progressFill').style.width = '97%';
+    }, 400);
+  });
+</script>
+</body>
+</html>

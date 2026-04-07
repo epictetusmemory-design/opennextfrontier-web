@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pathfinder — White Paper · OpenNextFrontier</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0a0a0f;
+  --paper:#faf8f4;
+  --paper2:#f3f0ea;
+  --rule:#d8d2c6;
+  --rule-hi:#b8b0a0;
+  --muted:#6b6355;
+  --dim:#999080;
+  --gold:#c4911a;
+  --gold-dark:#8a5f0a;
+  --gold-pale:#fdf3dc;
+  --navy:#04153f;
+  --navy-warm:#061840;
+  --blue:#0033AD;
+  --accent:#c8a96e;
+  --accent-lo:rgba(200,169,110,.12);
+}
+
+html{scroll-behavior:smooth}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'DM Sans',sans-serif;
+  font-size:15px;
+  line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* NAV */
+nav{
+  position:sticky;top:0;z-index:100;
+  background:var(--navy-warm);
+  padding:10px 32px;
+  display:flex;align-items:center;gap:4px;flex-wrap:wrap;
+  border-bottom:2px solid rgba(200,169,110,.3);
+}
+nav a{font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:4px 10px;letter-spacing:.08em}
+nav a:hover,nav a.active{color:#c8a96e}
+nav .brand{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:#fff;letter-spacing:.08em;margin-right:20px}
+
+/* COVER */
+.cover{
+  background:var(--navy-warm);
+  padding:80px 64px 72px;
+  position:relative;
+  overflow:hidden;
+}
+.cover::before{
+  content:'';
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(200,169,110,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(200,169,110,.04) 1px,transparent 1px);
+  background-size:48px 48px;
+}
+.cover::after{
+  content:'';
+  position:absolute;
+  bottom:-2px;left:0;right:0;height:3px;
+  background:linear-gradient(to right,var(--navy-warm),var(--gold),var(--accent),var(--gold),var(--navy-warm));
+}
+.cover-inner{position:relative;max-width:820px;margin:0 auto}
+.cover-eyebrow{
+  font-family:'DM Mono',monospace;
+  font-size:10px;letter-spacing:.25em;text-transform:uppercase;
+  color:rgba(200,169,110,.7);
+  margin-bottom:24px;
+  display:flex;align-items:center;gap:16px;
+}
+.cover-eyebrow::before{content:'';display:block;width:32px;height:1px;background:var(--accent);opacity:.5}
+.cover-eagle{font-size:48px;margin-bottom:20px;display:block}
+.cover-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(44px,6vw,76px);
+  font-weight:300;
+  line-height:1.05;
+  color:#fff;
+  letter-spacing:-.02em;
+  margin-bottom:12px;
+}
+.cover-title em{font-style:italic;color:var(--accent)}
+.cover-subtitle{
+  font-family:'Cormorant Garamond',serif;
+  font-size:22px;
+  font-weight:300;
+  font-style:italic;
+  color:rgba(255,255,255,.5);
+  margin-bottom:40px;
+}
+.cover-meta{
+  display:flex;gap:40px;flex-wrap:wrap;
+  padding-top:32px;
+  border-top:1px solid rgba(200,169,110,.2);
+}
+.cover-meta-item{font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.4);letter-spacing:.08em;line-height:2}
+.cover-meta-item strong{display:block;color:rgba(255,255,255,.7);margin-bottom:2px}
+
+/* PAGE */
+.page{max-width:820px;margin:0 auto;padding:64px 32px 80px}
+
+/* SECTION */
+.section{margin-bottom:64px}
+.section-num{
+  font-family:'DM Mono',monospace;font-size:9px;
+  letter-spacing:.2em;color:var(--accent);
+  text-transform:uppercase;margin-bottom:10px;
+  display:flex;align-items:center;gap:12px;
+}
+.section-num::after{content:'';flex:1;height:1px;background:var(--rule)}
+.section-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(28px,4vw,40px);
+  font-weight:600;
+  line-height:1.15;
+  color:var(--ink);
+  margin-bottom:24px;
+  letter-spacing:-.01em;
+}
+.section-title em{font-style:italic;color:var(--gold-dark)}
+
+/* PULLQUOTE */
+.pullquote{
+  border-left:3px solid var(--accent);
+  margin:32px 0;
+  padding:20px 28px;
+  background:var(--accent-lo);
+}
+.pullquote p{
+  font-family:'Cormorant Garamond',serif;
+  font-size:22px;
+  font-weight:400;
+  font-style:italic;
+  line-height:1.45;
+  color:var(--gold-dark);
+}
+.pullquote cite{
+  display:block;
+  margin-top:10px;
+  font-family:'DM Mono',monospace;
+  font-size:9px;
+  letter-spacing:.15em;
+  text-transform:uppercase;
+  color:var(--dim);
+  font-style:normal;
+}
+
+/* BODY TEXT */
+.body-text p{margin-bottom:16px;color:#2a2520}
+.body-text p:last-child{margin-bottom:0}
+.body-text strong{color:var(--ink);font-weight:600}
+
+/* ARCHITECTURE DIAGRAM */
+.arch-diagram{
+  margin:32px 0;
+  background:var(--navy-warm);
+  border:1px solid rgba(200,169,110,.2);
+  padding:32px;
+  font-family:'DM Mono',monospace;
+  font-size:12px;
+  color:rgba(255,255,255,.6);
+  line-height:2;
+  overflow-x:auto;
+}
+.arch-diagram .label{color:var(--accent);font-weight:500}
+.arch-diagram .dim{color:rgba(255,255,255,.3)}
+.arch-diagram .highlight{color:#4ec994}
+.arch-diagram .warn{color:#f87171}
+
+/* TIER TABLE */
+.tier-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:3px;
+  margin:28px 0;
+}
+.tier-card{
+  background:var(--paper2);
+  border:1px solid var(--rule);
+  padding:18px 16px;
+  position:relative;
+}
+.tier-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.tier-card.t0::before{background:var(--rule-hi)}
+.tier-card.t1::before{background:var(--blue)}
+.tier-card.t2::before{background:var(--gold)}
+.tier-card.t3::before{background:linear-gradient(to right,var(--gold),var(--accent))}
+.tier-name{
+  font-family:'Cormorant Garamond',serif;
+  font-size:18px;font-weight:600;
+  color:var(--ink);margin-bottom:4px;
+}
+.tier-num{
+  font-family:'DM Mono',monospace;
+  font-size:9px;letter-spacing:.15em;
+  color:var(--dim);text-transform:uppercase;margin-bottom:10px;
+}
+.tier-desc{font-size:11px;color:var(--muted);line-height:1.55}
+.tier-badge{
+  display:inline-block;margin-top:10px;
+  font-family:'DM Mono',monospace;font-size:9px;
+  padding:2px 8px;border-radius:2px;
+  background:var(--accent-lo);color:var(--gold-dark);
+  border:1px solid rgba(200,169,110,.3);
+  letter-spacing:.06em;
+}
+
+/* FEATURE GRID */
+.feature-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:16px;margin:28px 0;
+}
+.feature-card{
+  background:var(--paper2);
+  border:1px solid var(--rule);
+  border-left:3px solid var(--accent);
+  padding:18px 20px;
+}
+.feature-icon{font-size:20px;margin-bottom:8px}
+.feature-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:17px;font-weight:600;
+  color:var(--ink);margin-bottom:6px;
+}
+.feature-desc{font-size:12px;color:var(--muted);line-height:1.6}
+
+/* COMPARISON TABLE */
+.comp-table{
+  margin:28px 0;
+  border:1px solid var(--rule);
+  overflow:hidden;
+}
+.comp-header{
+  display:grid;grid-template-columns:2fr 1fr 1fr 1fr;
+  background:var(--navy-warm);
+}
+.comp-header-cell{
+  padding:10px 14px;
+  font-family:'DM Mono',monospace;font-size:9px;
+  letter-spacing:.12em;text-transform:uppercase;
+}
+.comp-header-cell.pf{color:var(--accent)}
+.comp-header-cell.cloud{color:rgba(255,255,255,.5)}
+.comp-row{
+  display:grid;grid-template-columns:2fr 1fr 1fr 1fr;
+  border-top:1px solid var(--rule);
+}
+.comp-row:hover{background:var(--paper2)}
+.comp-cell{
+  padding:9px 14px;font-size:12px;color:var(--muted);
+  border-right:1px solid var(--rule);
+}
+.comp-cell:last-child{border-right:none}
+.comp-cell.feat{color:var(--ink);font-weight:500}
+.comp-cell.yes-pf{color:#15803d;font-weight:600}
+.comp-cell.yes-both{color:var(--blue)}
+.comp-cell.no{color:var(--rule-hi)}
+.comp-cell.star{color:var(--gold-dark);font-weight:700}
+
+/* PRINCIPLE CARDS */
+.principles{display:flex;flex-direction:column;gap:3px;margin:28px 0}
+.principle{
+  display:flex;gap:20px;align-items:flex-start;
+  padding:16px 20px;
+  background:var(--paper2);
+  border:1px solid var(--rule);
+}
+.principle-num{
+  font-family:'DM Mono',monospace;font-size:11px;
+  color:var(--accent);font-weight:500;
+  flex-shrink:0;width:24px;margin-top:2px;
+}
+.principle-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:16px;font-weight:600;
+  color:var(--ink);margin-bottom:4px;
+}
+.principle-desc{font-size:12px;color:var(--muted);line-height:1.6}
+
+/* ROADMAP */
+.roadmap{display:flex;flex-direction:column;gap:3px;margin:28px 0}
+.road-item{
+  display:grid;grid-template-columns:120px 1fr;
+  border:1px solid var(--rule);
+  overflow:hidden;
+}
+.road-phase{
+  background:var(--navy-warm);
+  padding:16px;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  text-align:center;
+}
+.road-phase-num{
+  font-family:'DM Mono',monospace;font-size:9px;
+  letter-spacing:.15em;color:rgba(255,255,255,.4);
+  text-transform:uppercase;margin-bottom:4px;
+}
+.road-phase-name{
+  font-family:'Cormorant Garamond',serif;
+  font-size:14px;font-weight:600;color:var(--accent);
+}
+.road-phase.done .road-phase-name{color:#4ec994}
+.road-phase.current .road-phase-name{color:var(--accent)}
+.road-phase.future .road-phase-name{color:rgba(255,255,255,.3)}
+.road-body{padding:16px 20px;background:var(--paper2)}
+.road-title{font-weight:600;color:var(--ink);font-size:13px;margin-bottom:4px}
+.road-desc{font-size:11px;color:var(--muted);line-height:1.6}
+.road-status{
+  display:inline-block;margin-top:6px;
+  font-family:'DM Mono',monospace;font-size:9px;
+  padding:2px 8px;border-radius:2px;letter-spacing:.06em;
+}
+.road-status.done{background:rgba(78,201,148,.1);color:#15803d;border:1px solid rgba(78,201,148,.3)}
+.road-status.current{background:var(--accent-lo);color:var(--gold-dark);border:1px solid rgba(200,169,110,.3)}
+.road-status.future{background:var(--paper);color:var(--dim);border:1px solid var(--rule)}
+
+/* SOVEREIGNTY STATEMENT */
+.sovereignty-block{
+  background:var(--navy-warm);
+  padding:40px 48px;
+  margin:40px 0;
+  position:relative;
+  overflow:hidden;
+  text-align:center;
+}
+.sovereignty-block::before{
+  content:'';
+  position:absolute;bottom:0;left:0;right:0;height:2px;
+  background:linear-gradient(to right,transparent,var(--accent),transparent);
+}
+.sovereignty-block p{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(20px,3vw,28px);
+  font-weight:300;font-style:italic;
+  color:#fff;
+  line-height:1.4;
+  max-width:620px;
+  margin:0 auto 12px;
+}
+.sovereignty-block p strong{color:var(--accent);font-style:normal;font-weight:600}
+.sovereignty-block .tagline{
+  font-family:'DM Mono',monospace;
+  font-size:10px;letter-spacing:.2em;
+  text-transform:uppercase;
+  color:rgba(200,169,110,.5);
+}
+
+/* STAT ROW */
+.stat-row{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:3px;margin:28px 0;
+}
+.stat-card{
+  background:var(--paper2);border:1px solid var(--rule);
+  padding:20px 16px;text-align:center;
+}
+.stat-num{
+  font-family:'Cormorant Garamond',serif;
+  font-size:40px;font-weight:600;
+  color:var(--gold-dark);line-height:1;margin-bottom:6px;
+}
+.stat-label{
+  font-family:'DM Mono',monospace;font-size:9px;
+  letter-spacing:.12em;text-transform:uppercase;
+  color:var(--dim);
+}
+
+/* DIVIDER */
+.divider{
+  display:flex;align-items:center;gap:16px;
+  margin:48px 0 40px;
+}
+.divider-line{flex:1;height:1px;background:var(--rule)}
+.divider-ornament{
+  font-family:'DM Mono',monospace;font-size:10px;
+  color:var(--accent);letter-spacing:.2em;
+}
+
+/* FOOTER */
+.wp-footer{
+  background:var(--navy-warm);
+  padding:32px 64px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:16px;
+}
+.wp-footer-brand{
+  font-family:'Cormorant Garamond',serif;
+  font-size:18px;font-weight:600;color:#fff;
+}
+.wp-footer-tagline{
+  font-family:'DM Mono',monospace;
+  font-size:9px;letter-spacing:.1em;
+  color:rgba(255,255,255,.35);margin-top:3px;
+}
+.wp-footer-right{
+  font-family:'DM Mono',monospace;font-size:9px;
+  color:rgba(255,255,255,.3);text-align:right;
+  letter-spacing:.08em;line-height:2;
+}
+
+/* TOC */
+.toc{
+  background:var(--paper2);border:1px solid var(--rule);
+  padding:28px 32px;margin:40px 0;
+}
+.toc-title{
+  font-family:'DM Mono',monospace;font-size:9px;
+  letter-spacing:.2em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:16px;
+}
+.toc-list{list-style:none;display:flex;flex-direction:column;gap:6px}
+.toc-list li{display:flex;justify-content:space-between;align-items:baseline}
+.toc-list a{
+  font-family:'Cormorant Garamond',serif;
+  font-size:16px;color:var(--ink);text-decoration:none;
+}
+.toc-list a:hover{color:var(--gold-dark)}
+.toc-dots{flex:1;border-bottom:1px dotted var(--rule);margin:0 8px;position:relative;top:-3px}
+.toc-num{font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)}
+
+@media(max-width:700px){
+  .cover{padding:48px 24px}
+  .page{padding:40px 20px}
+  .tier-grid,.feature-grid,.stat-row{grid-template-columns:1fr 1fr}
+  .comp-header,.comp-row{grid-template-columns:2fr 1fr 1fr}
+  .road-item{grid-template-columns:80px 1fr}
+  .wp-footer{padding:24px 20px}
+}
+
+@media print{
+  nav{display:none}
+  .cover{break-after:page}
+  .section{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="brand">🦅 Pathfinder</span>
+  <a href="index.html">Home</a>
+  <a href="architecture.html">Architecture</a>
+  <a href="capabilities.html">Capabilities</a>
+  <a href="openclaw.html">vs OpenClaw</a>
+  <a href="whitepaper.html" class="active">White Paper</a>
+</nav>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-inner">
+    <div class="cover-eyebrow">OpenNextFrontier · Technical White Paper</div>
+    <span class="cover-eagle">🦅</span>
+    <h1 class="cover-title">
+      Your <em>Self-Sovereign</em><br>AI Agent
+    </h1>
+    <div class="cover-subtitle">Architecture, Philosophy, and the Case for Sovereignty by Design</div>
+    <div class="cover-meta">
+      <div class="cover-meta-item"><strong>Product</strong>Pathfinder v0.1.5</div>
+      <div class="cover-meta-item"><strong>Publisher</strong>OpenNextFrontier</div>
+      <div class="cover-meta-item"><strong>Date</strong>April 2026</div>
+      <div class="cover-meta-item"><strong>License</strong>AGPL v3 Open Source</div>
+      <div class="cover-meta-item"><strong>Stack</strong>Tauri 2 · Rust · React 19 · SQLite</div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- TABLE OF CONTENTS -->
+  <div class="toc">
+    <div class="toc-title">Contents</div>
+    <ul class="toc-list">
+      <li><a href="#abstract">Abstract</a><span class="toc-dots"></span><span class="toc-num">01</span></li>
+      <li><a href="#problem">The Problem with "Trust Us"</a><span class="toc-dots"></span><span class="toc-num">02</span></li>
+      <li><a href="#principle">The Founding Principle</a><span class="toc-dots"></span><span class="toc-num">03</span></li>
+      <li><a href="#architecture">Architecture</a><span class="toc-dots"></span><span class="toc-num">04</span></li>
+      <li><a href="#tiers">Security Tier Model</a><span class="toc-dots"></span><span class="toc-num">05</span></li>
+      <li><a href="#capabilities">Capabilities</a><span class="toc-dots"></span><span class="toc-num">06</span></li>
+      <li><a href="#sovereignty">Sovereignty in Practice</a><span class="toc-dots"></span><span class="toc-num">07</span></li>
+      <li><a href="#community">Community &amp; Extensibility</a><span class="toc-dots"></span><span class="toc-num">08</span></li>
+      <li><a href="#comparison">Comparison</a><span class="toc-dots"></span><span class="toc-num">09</span></li>
+      <li><a href="#roadmap">Roadmap</a><span class="toc-dots"></span><span class="toc-num">10</span></li>
+      <li><a href="#literacy">AI Literacy Initiative</a><span class="toc-dots"></span><span class="toc-num">11</span></li>
+      <li><a href="#conclusion">Conclusion</a><span class="toc-dots"></span><span class="toc-num">12</span></li>
+    </ul>
+  </div>
+
+  <!-- 01 ABSTRACT -->
+  <div class="section" id="abstract">
+    <div class="section-num">01 — Abstract</div>
+    <h2 class="section-title">The Case for <em>Sovereign</em> Personal AI</h2>
+    <div class="body-text">
+      <p>Pathfinder is a native desktop application and personal AI agent built on a single architectural guarantee: by default, nothing leaves your machine. It is not a cloud service with a privacy policy. It is a locally-run system whose architecture is structurally incapable of transmitting your data without your explicit choice.</p>
+      <p>This white paper presents the technical architecture, design philosophy, capability set, and roadmap for Pathfinder — and makes the broader case for why personal AI must be sovereign by design, not sovereign by promise.</p>
+      <p>Pathfinder is open-source under AGPL v3. It runs on Windows, macOS, and Linux. It supports five LLM providers — local and cloud — switchable per persona. It includes an encrypted vault, a Telegram gateway, a cron scheduler, an agent loop with tool calling, a knowledge base, a credentials manager, and a skills pipeline. All of it runs on your hardware. All of it answers to you.</p>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-num">9</div><div class="stat-label">Blocks Complete</div></div>
+      <div class="stat-card"><div class="stat-num">5</div><div class="stat-label">LLM Providers</div></div>
+      <div class="stat-card"><div class="stat-num">∞</div><div class="stat-label">Data Ownership</div></div>
+      <div class="stat-card"><div class="stat-num">0</div><div class="stat-label">Servers to Breach</div></div>
+    </div>
+  </div>
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-ornament">✦</div><div class="divider-line"></div></div>
+
+  <!-- 02 PROBLEM -->
+  <div class="section" id="problem">
+    <div class="section-num">02 — The Problem</div>
+    <h2 class="section-title">What "Trust Us" Actually Means</h2>
+    <div class="body-text">
+      <p>Every major AI assistant in use today operates on the same implicit contract: hand over your data, your conversations, your habits, and your identity — and in return, receive intelligence. The provider promises to be responsible with what you share. They publish privacy policies. They hire ethics teams. They mean well.</p>
+      <p>But "trust us" is a policy. And policies change.</p>
+      <p>Policies are rewritten when business models shift. They are overridden by government requests. They are rendered meaningless by acquisitions, bankruptcies, and data breaches. A policy is a promise made by people who may not be there tomorrow, about data that already left your hands yesterday.</p>
+    </div>
+
+    <div class="pullquote">
+      <p>"The question worth asking is not 'do you trust this company?' It is 'should trust even be required?'"</p>
+      <cite>— OpenNextFrontier Personal AI Manifesto</cite>
+    </div>
+
+    <div class="body-text">
+      <p>We are at an inflection point. AI is moving from novelty to infrastructure — from something you try to something you depend on. The decisions made in the next few years about how personal AI is architected will shape who owns the most intimate layer of human cognition for decades.</p>
+      <p>Your AI assistant learns your schedule, your relationships, your health concerns, your finances, your fears. That is an extraordinary amount of trust to place in a terms-of-service agreement.</p>
+      <p>Pathfinder offers an alternative: personal AI that is genuinely personal. Intelligence that serves its owner because it is built to — not because it promised to.</p>
+    </div>
+  </div>
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-ornament">✦</div><div class="divider-line"></div></div>
+
+  <!-- 03 PRINCIPLE -->
+  <div class="section" id="principle">
+    <div class="section-num">03 — The Founding Principle</div>
+    <h2 class="section-title">Sovereignty <em>by Design</em></h2>
+    <div class="body-text">
+      <p>Pathfinder is built on a single foundational principle: <strong>a system that is architecturally incapable of acting against its owner cannot betray them</strong> — regardless of who builds it, funds it, or acquires it.</p>
+      <p>This is not a privacy policy. It is the structure of the system itself.</p>
+    </div>
+
+    <div class="principles">
+      <div class="principle">
+        <div class="principle-num">I</div>
+        <div>
+          <div class="principle-title">The Vault is Permissionless</div>
+          <div class="principle-desc">The architect of Pathfinder has never seen any user's memories and never will. There is no server to subpoena. There is no database to breach. There is no account to deactivate.</div>
+        </div>
+      </div>
+      <div class="principle">
+        <div class="principle-num">II</div>
+        <div>
+          <div class="principle-title">Sovereignty is the Baseline, Not a Feature</div>
+          <div class="principle-desc">Sovereignty begins at Settler — the moment someone installs Pathfinder. Tiers add capability. They do not add sovereignty. A person who journals privately owns their data completely, just as much as someone running a full sovereign stack.</div>
+        </div>
+      </div>
+      <div class="principle">
+        <div class="principle-num">III</div>
+        <div>
+          <div class="principle-title">Intentional Connection, Not Forced Trust</div>
+          <div class="principle-desc">When Pathfinder uses a cloud LLM, only the current conversation context is sent. The vault, memories, credentials, and documents are never included. Web search sends only the query. n8n sends only the intent and parameters. Every external connection is deliberate, scoped, and initiated by you.</div>
+        </div>
+      </div>
+      <div class="principle">
+        <div class="principle-num">IV</div>
+        <div>
+          <div class="principle-title">Architecture Enforces, Not Policy</div>
+          <div class="principle-desc">Pioneer tier blocks cloud LLMs at the Rust command layer — not a UI toggle, not a settings flag. It is enforced in compiled code. A Pioneer persona will never send inference to a cloud LLM regardless of configuration.</div>
+        </div>
+      </div>
+      <div class="principle">
+        <div class="principle-num">V</div>
+        <div>
+          <div class="principle-title">Open Source as Verification</div>
+          <div class="principle-desc">AGPL v3. The architecture is visible, forkable, and auditable. Any person can verify exactly what Pathfinder does with their data. Trust is not required — verification is available.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sovereignty-block">
+      <p>"The most trustworthy AI is one that <strong>cannot</strong> betray you. Not one that has agreed not to. Not one that has a good reputation. One that, by its structure, has no pathway to act against the person it serves."</p>
+      <div class="tagline">Sovereignty by design. — OpenNextFrontier</div>
+    </div>
+  </div>
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-ornament">✦</div><div class="divider-line"></div></div>
+
+  <!-- 04 ARCHITECTURE -->
+  <div class="section" id="architecture">
+    <div class="section-num">04 — Architecture</div>
+    <h2 class="section-title">Built on a <em>Sovereign</em> Stack</h2>
+    <div class="body-text">
+      <p>Pathfinder is a native desktop application built with Tauri 2 and a Rust backend. It is not a web app. It is not an Electron app. It is a single compiled binary with a bundled SQLite database and an AES-256-GCM encrypted vault — all running on your hardware, with no external server required.</p>
+    </div>
+
+    <div class="arch-diagram">
+<span class="label">PATHFINDER ARCHITECTURE — v0.1.5</span>
+
+<span class="dim">┌─────────────────────────────────────────────────────────┐</span>
+<span class="dim">│</span> <span class="label">FRONTEND</span>  React 19 · TypeScript · Tailwind 4 · Vite     <span class="dim">│</span>
+<span class="dim">│</span>  ChatPanel · Settings (11 panels) · VaultUnlock · AppShell <span class="dim">│</span>
+<span class="dim">└──────────────────────┬──────────────────────────────────┘</span>
+                       <span class="dim">│ Tauri invoke()</span>
+<span class="dim">┌──────────────────────▼──────────────────────────────────┐</span>
+<span class="dim">│</span> <span class="label">RUST COMMANDS</span>  agent_chat · vault_* · persona_* · memory_* <span class="dim">│</span>
+<span class="dim">│</span>  Thin handlers — delegate to services layer              <span class="dim">│</span>
+<span class="dim">└──────────────────────┬──────────────────────────────────┘</span>
+                       <span class="dim">│</span>
+<span class="dim">┌──────────────────────▼──────────────────────────────────┐</span>
+<span class="dim">│</span> <span class="label">SERVICES</span>  vault.rs · persona.rs · memory.rs · conversation.rs <span class="dim">│</span>
+<span class="dim">│</span>  <span class="highlight">gateway/</span> (Gateway trait)  <span class="highlight">tools/</span> (Tool trait)           <span class="dim">│</span>
+<span class="dim">│</span>  <span class="highlight">scheduler_engine.rs</span> (tokio cron)                        <span class="dim">│</span>
+<span class="dim">└────────┬──────────────────────────┬───────────────────┘</span>
+         <span class="dim">│</span>                          <span class="dim">│</span>
+<span class="dim">┌────────▼──────┐</span>      <span class="dim">┌──────────▼──────────────────────┐</span>
+<span class="dim">│</span> <span class="label">pathfinder.db</span> <span class="dim">│</span>      <span class="dim">│</span> <span class="label">pathfinder.vault</span>                 <span class="dim">│</span>
+<span class="dim">│</span> SQLite WAL    <span class="dim">│</span>      <span class="dim">│</span> AES-256-GCM · PBKDF2 100k        <span class="dim">│</span>
+<span class="dim">│</span> 18 migrations <span class="dim">│</span>      <span class="dim">│</span> <span class="warn">Never written to disk unencrypted</span> <span class="dim">│</span>
+<span class="dim">└───────────────┘</span>      <span class="dim">└─────────────────────────────────┘</span>
+
+<span class="highlight">External (user-initiated only):</span>
+  Cloud LLM → conversation context only (no vault, no memories)
+  Web search → query only
+  n8n → intent + parameters only
+  Telegram → your bot, your token, polling mode
+    </div>
+
+    <div class="body-text">
+      <p>The Rust backend enforces all security constraints at the command layer before any data is processed. The frontend is a pure consumer of Tauri commands — it never accesses the vault or database directly. This separation means tier enforcement cannot be bypassed by modifying frontend code.</p>
+      <p>The SQLite database uses WAL (Write-Ahead Logging) mode with rusqlite 0.37 bundled — no system dependency required. The vault is a key-value store encrypted with AES-256-GCM using a key derived from the user's passphrase via PBKDF2/SHA-256 at 100,000 iterations. The key is cached in RAM as a <code>VaultSession</code> and zeroized from memory on drop — it is never written to disk.</p>
+    </div>
+  </div>
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-ornament">✦</div><div class="divider-line"></div></div>
+
+  <!-- 05 TIERS -->
+  <div class="section" id="tiers">
+    <div class="section-num">05 — Security Tier Model</div>
+    <h2 class="section-title">Progressive Capability, <em>Constant Sovereignty</em></h2>
+    <div class="body-text">
+      <p>Pathfinder uses a four-tier security model. Each tier adds capability — none remove sovereignty. Tiers are per-persona, not per-installation. A single Pathfinder installation can simultaneously run a Scout persona (local LLM only) and a Pioneer persona (cloud LLM enabled), each with its own model, memory, and security constraints.</p>
+    </div>
+
+    <div class="tier-grid">
+      <div class="tier-card t0">
+        <div class="tier-num">Tier 0</div>
+        <div class="tier-name">Settler</div>
+        <div class="tier-desc">Vault, memory capture, Telegram gateway, scheduler, credentials manager, BM25 knowledge search. No LLM of any kind required.</div>
+        <div class="tier-badge">No API key needed</div>
+      </div>
+      <div class="tier-card t1">
+        <div class="tier-num">Tier 1</div>
+        <div class="tier-name">Scout</div>
+        <div class="tier-desc">All Settler capabilities plus local LLM inference via Ollama or BitNet. Agent loop, tools, skills, document search. No cloud required.</div>
+        <div class="tier-badge">Ollama recommended</div>
+      </div>
+      <div class="tier-card t2">
+        <div class="tier-num">Tier 2</div>
+        <div class="tier-name">Pioneer</div>
+        <div class="tier-desc">All Scout capabilities plus cloud LLM access (Claude, GPT, Gemini). Web search, n8n workflows, full agent capability. Local and cloud mixed per persona.</div>
+        <div class="tier-badge">API key required</div>
+      </div>
+      <div class="tier-card t3">
+        <div class="tier-num">Tier 3</div>
+        <div class="tier-name">Explorer</div>
+        <div class="tier-desc">All Pioneer capabilities plus hardware wallet signing, ZK proofs, and cryptographic ledger integration.</div>
+        <div class="tier-badge">Future release</div>
+      </div>
+    </div>
+
+    <div class="body-text">
+      <p>The Scout tier block is the clearest example of sovereignty by architecture. When a persona is set to Settler or Scout (tiers 0 or 1), the <code>agent_chat</code> Rust command checks <code>security_tier &lt;= 1</code> before routing to any cloud provider and returns an error — not a warning, an architectural rejection. This check runs in compiled Rust — it is not a frontend setting that can be toggled or bypassed. A Scout persona will never send inference to Anthropic, OpenAI, or Google, regardless of what API keys are stored in the vault.</p>
+      <p>A single Pathfinder installation can run a Scout persona (local-only) and a Pioneer persona (cloud-enabled) simultaneously — each with its own model, system prompt, and capability set. Tiers are per-persona, not per-installation.</p>
+      <p>The first-run wizard performs an environment scan — pinging Ollama, listing installed models, checking RAM and disk — and auto-recommends the appropriate starting tier based on what is already installed on the machine.</p>
+    </div>
+  </div>
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-ornament">✦</div><div class="divider-line"></div></div>
+
+  <!-- 06 CAPABILITIES -->
+  <div class="section" id="capabilities">
+    <div class="section-num">06 — Capabilities</div>
+    <h2 class="section-title">What Pathfinder Can Do <em>Today</em></h2>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🎭</div>
+        <div class="feature-title">Multi-Persona Identity</div>
+        <div class="feature-desc">Unlimited personas, each a different mind — own model, system prompt, tone, security tier, color, and key overrides. Me-Corporate on Opus. Me-Personal on local qwen3. Me-Hobby on BitNet at zero cost.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔐</div>
+        <div class="feature-title">AES-256-GCM Vault</div>
+        <div class="feature-desc">PBKDF2/SHA-256, 100k iterations. API keys, credentials, documents — all encrypted. Key zeroized from RAM on drop. Never written to disk. Credentials never stored in the database.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📱</div>
+        <div class="feature-title">Telegram Gateway</div>
+        <div class="feature-desc">teloxide, polling mode, no public IP required. Intent tokens: memory:, journal:, note:, find:, card:, password:, doc:. Photo, voice, and document capture. Persona switching via PIN.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔧</div>
+        <div class="feature-title">Agent Loop + Tools</div>
+        <div class="feature-desc">Up to 5 iterations, dedup check, unknown tool fallback, brace-matching parser. Web search (Serper), document search (BM25), n8n workflows (400+ integrations), calculator. Short-circuit when no tools available.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⏰</div>
+        <div class="feature-title">Cron Scheduler</div>
+        <div class="feature-desc">Tokio-based cron engine. One-shot and recurring jobs. Telegram delivery. Per-job run history. Jobs fire while the app is open — autonomous AI work on your schedule.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📚</div>
+        <div class="feature-title">Knowledge RAG</div>
+        <div class="feature-desc">BM25 keyword search on knowledge_chunks table. docs/ folder auto-indexed on startup. Trailhead persona injects full documentation context via RAG — ask Pathfinder how to use Pathfinder.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔑</div>
+        <div class="feature-title">Credentials Manager</div>
+        <div class="feature-desc">Passwords in vault at shared.credentials.{id}.password — never in SQLite. pfcreds encrypted export/import (AES-256-GCM JSON blob). CSV import. Retrieve via Telegram password: intent token.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <div class="feature-title">Skills Pipeline</div>
+        <div class="feature-desc">Folder-based skill system: 00_references → 01_input → 02_process → 03_output. skill.json manifest. No Rust required to build a skill. Morning Brief and Research skills included.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-ornament">✦</div><div class="divider-line"></div></div>
+
+  <!-- 07 SOVEREIGNTY IN PRACTICE -->
+  <div class="section" id="sovereignty">
+    <div class="section-num">07 — Sovereignty in Practice</div>
+    <h2 class="section-title">What Stays Local. <em>Always.</em></h2>
+    <div class="body-text">
+      <p>The sovereignty claim is architectural, not absolute. Here is exactly what stays local and what travels, when you choose to let it:</p>
+    </div>
+
+    <div class="comp-table">
+      <div class="comp-header">
+        <div class="comp-header-cell">Data</div>
+        <div class="comp-header-cell pf">Stays Local</div>
+        <div class="comp-header-cell cloud">Travels When</div>
+        <div class="comp-header-cell cloud">What Is Sent</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-cell feat">Vault contents</div>
+        <div class="comp-cell yes-pf">Always</div>
+        <div class="comp-cell no">Never</div>
+        <div class="comp-cell no">—</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-cell feat">Memories</div>
+        <div class="comp-cell yes-pf">Always</div>
+        <div class="comp-cell no">Never</div>
+        <div class="comp-cell no">—</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-cell feat">Credentials / passwords</div>
+        <div class="comp-cell yes-pf">Always</div>
+        <div class="comp-cell no">Never</div>
+        <div class="comp-cell no">—</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-cell feat">Personas &amp; system prompts</div>
+        <div class="comp-cell yes-pf">Always</div>
+        <div class="comp-cell no">Never</div>
+        <div class="comp-cell no">—</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-cell feat">Conversation context</div>
+        <div class="comp-cell yes-pf">By default</div>
+        <div class="comp-cell">Cloud LLM chosen</div>
+        <div class="comp-cell">Current conversation only</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-cell feat">Web search query</div>
+        <div class="comp-cell">N/A</div>
+        <div class="comp-cell">Web search tool used</div>
+        <div class="comp-cell">Search query only</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-cell feat">n8n workflow call</div>
+        <div class="comp-cell">N/A</div>
+        <div class="comp-cell">n8n tool used</div>
+        <div class="comp-cell">Intent + query + parameters</div>
+      </div>
+    </div>
+
+    <div class="body-text">
+      <p>Pioneer tier personas never appear in the "Travels When" column for conversation context — cloud LLMs are blocked by the Rust command layer before the call is ever made.</p>
+    </div>
+  </div>
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-ornament">✦</div><div class="divider-line"></div></div>
+
+  <!-- 08 COMMUNITY -->
+  <div class="section" id="community">
+    <div class="section-num">08 — Community &amp; Extensibility</div>
+    <h2 class="section-title">Five Extension Points. <em>One Sovereignty Core.</em></h2>
+    <div class="body-text">
+      <p>Pathfinder is designed for community extensibility from the start. Five defined extension points allow contributors to add capabilities without touching the sovereignty core — the vault encryption, tier enforcement, and core DB schema remain founder-controlled.</p>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">📡</div>
+        <div class="feature-title">Gateway Modules</div>
+        <div class="feature-desc">Implement the Rust Gateway trait to add new transport channels. Signal, Discord, IRC, Meshtastic — the trait is defined and ready. Telegram is the reference implementation.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔧</div>
+        <div class="feature-title">Tool Factory</div>
+        <div class="feature-desc">Implement the Tool trait to add new agent-callable tools. Tier + key gating is automatic. The ALL_TOOLS registry filters at call time. No core code changes required.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🏷️</div>
+        <div class="feature-title">Token Handlers</div>
+        <div class="feature-desc">Add new intent token prefixes to the gateway handler. The token protocol is how Pathfinder routes Telegram messages without LLM involvement — fast, cheap, sovereign.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💾</div>
+        <div class="feature-title">Storage Adapters</div>
+        <div class="feature-desc">Implement the MemoryStore trait to add new memory backends. Vector search via nomic-embed-text is the planned next adapter alongside the existing BM25 SQLite implementation.</div>
+      </div>
+    </div>
+
+    <div class="feature-card" style="margin-top:3px">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-title">Skills — No Rust Required</div>
+      <div class="feature-desc">The lowest-barrier extension point. A skill is a folder with a skill.json manifest and markdown files. No compilation. No Rust. Anyone who can write markdown can build a Pathfinder skill. The folder pipeline (00_references → 01_input → 02_process → 03_output) handles execution.</div>
+    </div>
+
+    <div class="body-text" style="margin-top:24px">
+      <p>Community contributions are gated on Block 12 — which requires a cryptographic contribution ledger (blockchain-based) to be production-ready. This is intentional: the contribution process itself must be sovereign. Every merge will require a CLA and an on-chain record. No contribution can reach users without explicit founder approval until the DAO governance model is operational.</p>
+      <p>The community layer sits above individual Pathfinder instances and can never reach inside them. It pushes capabilities downward. It never pulls data upward.</p>
+    </div>
+  </div>
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-ornament">✦</div><div class="divider-line"></div></div>
+
+  <!-- 09 COMPARISON -->
+  <div class="section" id="comparison">
+    <div class="section-num">09 — Comparison</div>
+    <h2 class="section-title">Pathfinder vs <em>Cloud AI</em></h2>
+    <div class="body-text">
+      <p>Cloud AI tools — Claude.ai, ChatGPT, Gemini — are excellent at inference. They are not designed for sovereignty. The comparison below is not a criticism of their models; it is an observation about their architecture.</p>
+    </div>
+
+    <div class="comp-table">
+      <div class="comp-header">
+        <div class="comp-header-cell">Capability</div>
+        <div class="comp-header-cell pf">🦅 Pathfinder</div>
+        <div class="comp-header-cell cloud">Claude.ai</div>
+        <div class="comp-header-cell cloud">ChatGPT</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-cell feat">Data stays on your machine</div>
+        <div class="comp-cell star">★ Always</div>
+        <div class="comp-cell no">✕ Their servers</div>
+        <div class="comp-cell no">✕ Their servers</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-cell feat">Works fully offline</div>
+        <div class="comp-cell star">★ Scout tier</div>
+        <div class="comp-cell no">✕</div>
+        <div class="comp-cell no">✕</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-cell feat">Multiple personas</div>
+        <div class="comp-cell star">★ Unlimited</div>
+        <div class="comp-cell no">✕ Single identity</div>
+        <div class="comp-cell no">✕ Single identity</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-cell feat">Multiple LLM providers</div>
+        <div class="comp-cell star">★ 5 providers</div>
+        <div class="comp-cell no">✕ Claude only</div>
+        <div class="comp-cell no">✕ GPT only</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-cell feat">Telegram gateway</div>
+        <div class="comp-cell star">★ Built-in</div>
+        <div class="comp-cell no">✕</div>
+        <div class="comp-cell no">✕</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-cell feat">Cron scheduler</div>
+        <div class="comp-cell star">★ Built-in</div>
+        <div class="comp-cell no">✕</div>
+        <div class="comp-cell no">✕</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-cell feat">Encrypted credentials vault</div>
+        <div class="comp-cell star">★ Built-in</div>
+        <div class="comp-cell no">✕</div>
+        <div class="comp-cell no">✕</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-cell feat">Open source</div>
+        <div class="comp-cell star">★ AGPL v3</div>
+        <div class="comp-cell no">✕</div>
+        <div class="comp-cell no">✕</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-cell feat">Agent loop + tools</div>
+        <div class="comp-cell yes-both">✓ Built</div>
+        <div class="comp-cell yes-both">✓ Yes</div>
+        <div class="comp-cell yes-both">✓ Yes</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-cell feat">No conversation training</div>
+        <div class="comp-cell star">★ Guaranteed</div>
+        <div class="comp-cell">~ Opt-out</div>
+        <div class="comp-cell">~ Opt-out</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-ornament">✦</div><div class="divider-line"></div></div>
+
+  <!-- 10 ROADMAP -->
+  <div class="section" id="roadmap">
+    <div class="section-num">10 — Roadmap</div>
+    <h2 class="section-title">Where Pathfinder <em>Is Going</em></h2>
+
+    <div class="roadmap">
+      <div class="road-item">
+        <div class="road-phase done">
+          <div class="road-phase-num">Phase I</div>
+          <div class="road-phase-name">Foundation</div>
+        </div>
+        <div class="road-body">
+          <div class="road-title">Blocks 1–9 — Complete (v0.1.5)</div>
+          <div class="road-desc">Tauri 2 native app · AES vault · 5 LLM providers · Multi-persona · Telegram gateway · Agent loop · Scheduler · Skills · Trailhead RAG · Credentials · First-run wizard · NSIS installer</div>
+          <span class="road-status done">✓ Complete</span>
+        </div>
+      </div>
+      <div class="road-item">
+        <div class="road-phase current">
+          <div class="road-phase-num">Phase II</div>
+          <div class="road-phase-name">Reach</div>
+        </div>
+        <div class="road-body">
+          <div class="road-title">Blocks 10–11 — Android + Developer Readiness</div>
+          <div class="road-desc">Tauri Android target · Samsung Galaxy Tab APK · Architecture docs · Gateway/tool/skill walkthroughs · GitHub Actions CI · Mock LLM mode · Echo gateway reference · Issue/PR templates</div>
+          <span class="road-status current">In Progress</span>
+        </div>
+      </div>
+      <div class="road-item">
+        <div class="road-phase future">
+          <div class="road-phase-num">Phase III</div>
+          <div class="road-phase-name">Community</div>
+        </div>
+        <div class="road-body">
+          <div class="road-title">Block 12 — Community Contributions (Blockchain-gated)</div>
+          <div class="road-desc">Cryptographic contribution ledger · CLA + on-chain record · Extension marketplace · Contributor ZK verification · Cryptographic accountability bonds · Revenue distribution via smart contract</div>
+          <span class="road-status future">Planned</span>
+        </div>
+      </div>
+      <div class="road-item">
+        <div class="road-phase future">
+          <div class="road-phase-num">Phase IV</div>
+          <div class="road-phase-name">Living Platform</div>
+        </div>
+        <div class="road-body">
+          <div class="road-title">Explorer Tier + Decentralized Governance</div>
+          <div class="road-desc">Hardware wallet signing · ZK proofs · Cryptographic ledger identity · DAO governance · Event access verification · Signal/Discord/Meshtastic gateways · Voice I/O · .soul portable export · Social publishing</div>
+          <span class="road-status future">Future</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-ornament">✦</div><div class="divider-line"></div></div>
+
+  <!-- 11 AI LITERACY -->
+  <div class="section" id="literacy">
+    <div class="section-num">11 — AI Literacy Initiative</div>
+    <h2 class="section-title">An Educated Community <em>is a Resilient Community</em></h2>
+    <div class="body-text">
+      <p>Alongside Pathfinder as a product, OpenNextFrontier is developing an AI Literacy Initiative — a locally-rooted educational program that teaches practical AI skills to businesses, nonprofits, and individuals, with a built-in access model that ensures those who can't afford tuition still get a seat.</p>
+      <p>The goal is not to produce AI power users. It is to produce people who understand what AI is, what it is not, where it is heading, and what questions to ask. People who can evaluate claims made by vendors, employers, and politicians. People who know when to embrace a technology and when to push back.</p>
+    </div>
+
+    <div class="pullquote">
+      <p>"People are worried about their jobs, their privacy, and a future they feel they have no voice in. That fear is not irrational. An educated community is a resilient community."</p>
+      <cite>— AI Literacy Initiative Briefing Note</cite>
+    </div>
+
+    <div class="body-text">
+      <p><strong>What students take home:</strong> A working AI assistant that runs locally on their own computer — no subscription, no ongoing cost, no vendor dependency. Something real, not just a certificate.</p>
+      <p><strong>The model:</strong> Businesses and professionals who can afford quality AI education fund seats for nonprofit staff, community organizations, students, and individuals who couldn't otherwise participate. Paying students aren't just buying education — they're enabling access for others.</p>
+      <p><strong>Governance vision:</strong> A foundation arm (nonprofit, eventual 501(c)(3)) holds the educational mission and access fund. A commercial arm sustains operations and generates the cross-subsidy. Community governance expands over time to include educators, builders, and participants.</p>
+    </div>
+  </div>
+
+  <div class="divider"><div class="divider-line"></div><div class="divider-ornament">✦</div><div class="divider-line"></div></div>
+
+  <!-- 12 CONCLUSION -->
+  <div class="section" id="conclusion">
+    <div class="section-num">12 — Conclusion</div>
+    <h2 class="section-title">The Argument, <em>Stated Simply</em></h2>
+    <div class="body-text">
+      <p>Personal AI is becoming infrastructure. The architecture decisions being made today will determine who owns the most intimate layer of human cognition for the next generation.</p>
+      <p>Pathfinder is a bet on a different outcome: that it is possible to build personal AI that is genuinely personal. That sovereignty by design is not a niche concern but an architectural necessity. That the most trustworthy AI is not the one that promises best — it is the one that cannot betray you by structure.</p>
+      <p>The project is open-source. The architecture is visible. The vault is yours. The data is yours. The personas are yours. The memories are yours.</p>
+      <p>That is not a claim. That is a design.</p>
+    </div>
+
+    <div class="sovereignty-block">
+      <p>"Your <strong>self-sovereign</strong> AI agent. Intelligence that serves its owner because it is built to — not because it promised to."</p>
+      <div class="tagline">Sovereignty by design. — OpenNextFrontier · opennextfrontier.com</div>
+    </div>
+
+    <div class="body-text" style="margin-top:32px">
+      <p><strong>Get started:</strong> Download Pathfinder from opennextfrontier.com. Single .exe installer. No account. No subscription. Your data never leaves.</p>
+      <p><strong>Read the source:</strong> github.com/epictetusmemory-design/pathfinder-tauri — AGPL v3.</p>
+      <p><strong>Explore the docs:</strong> opennextfrontier.com — architecture, wire diagram, layer map, capabilities, this white paper.</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="wp-footer">
+  <div>
+    <div class="wp-footer-brand">🦅 OpenNextFrontier — Pathfinder</div>
+    <div class="wp-footer-tagline">Your Self-Sovereign AI Agent · Sovereignty by design.</div>
+  </div>
+  <div class="wp-footer-right">
+    <div>White Paper v1.0 · April 2026</div>
+    <div>Pathfinder v0.1.5 · AGPL v3</div>
+    <div>opennextfrontier.com</div>
+  </div>
+</div>
+
+</body>
+</html>

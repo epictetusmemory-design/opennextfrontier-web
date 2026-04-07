@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pathfinder — Wire Diagram · OpenNextFrontier</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#0033AD;
+  --blue-dark:#002080;
+  --blue-pale:#dde5f8;
+  --blue-mid:#6688cc;
+  --navy:#00103d;
+  --navy-warm:#04153f;
+  --gold:#c4911a;
+  --gold-pale:#fdf3dc;
+  --red:#b81818;
+  --green:#1a7a4a;
+  --green-pale:#d4f0e0;
+  --purple:#6b1a8a;
+  --purple-pale:#ead4f5;
+  --white:#ffffff;
+  --off-white:#f4f6fb;
+  --ink:#0a0a14;
+  --muted:#3a4a72;
+  --rule:#c0cce8;
+
+  /* Wire colors per tier */
+  --wire-0:#1a7a4a;
+  --wire-1:#0033AD;
+  --wire-2:#6b1a8a;
+  --wire-out:#c4911a;
+  --wire-blocked:#b81818;
+}
+html,body{
+  margin:0;padding:0;
+  background:var(--off-white);
+  font-family:'DM Sans',sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.page{
+  max-width:980px;
+  margin:0 auto;
+  padding:0 0 48px;
+}
+
+/* ── HEADER ── */
+.top-stripe{height:5px;background:linear-gradient(to right,var(--blue),var(--gold),var(--blue))}
+.header{
+  background:var(--navy-warm);
+  padding:18px 40px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:24px;
+}
+.brand{font-family:'Playfair Display',serif;font-size:14px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--white)}
+.header-center{text-align:center}
+.header-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--white)}
+.header-sub{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:2px}
+.header-right{font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,.3);text-align:right;letter-spacing:.06em;line-height:1.8}
+
+/* ── LEGEND ── */
+.legend{
+  display:flex;gap:20px;flex-wrap:wrap;
+  padding:10px 24px;
+  background:var(--white);
+  border-bottom:1px solid var(--rule);
+  margin-bottom:24px;
+}
+.li{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:.04em}
+.lw{width:28px;height:3px;border-radius:2px;flex-shrink:0}
+.lw0{background:var(--wire-0)}
+.lw1{background:var(--wire-1)}
+.lw2{background:var(--wire-2)}
+.lwo{background:var(--wire-out)}
+.lwb{background:var(--wire-blocked);background:repeating-linear-gradient(90deg,var(--wire-blocked) 0,var(--wire-blocked) 4px,transparent 4px,transparent 8px)}
+
+/* ── DIAGRAM CANVAS ── */
+.diagram{
+  position:relative;
+  padding:0 40px;
+}
+
+/* ── SVG WIRES ── */
+.wires{
+  position:absolute;
+  top:0;left:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+  z-index:1;
+}
+
+/* ── ROWS ── */
+.row{
+  display:flex;
+  justify-content:center;
+  gap:12px;
+  margin-bottom:0;
+  position:relative;
+  z-index:2;
+}
+.row-spacer{height:56px}
+.row-spacer-sm{height:40px}
+.row-spacer-lg{height:72px}
+
+/* ── BOXES ── */
+.box{
+  border:1.5px solid var(--rule);
+  background:var(--white);
+  padding:10px 14px;
+  text-align:center;
+  position:relative;
+  min-width:110px;
+}
+.box-icon{font-size:20px;display:block;margin-bottom:4px}
+.box-name{
+  font-family:'DM Mono',monospace;
+  font-size:11px;
+  font-weight:500;
+  color:var(--ink);
+  letter-spacing:.03em;
+  line-height:1.3;
+}
+.box-sub{
+  font-size:9px;
+  color:var(--muted);
+  margin-top:3px;
+  font-family:'DM Mono',monospace;
+  line-height:1.3;
+}
+
+/* box variants */
+.box-inbound{border-color:var(--blue-mid);border-left:3px solid var(--blue)}
+.box-brain{border-color:var(--blue);border-width:2px;background:var(--blue-pale)}
+.box-brain .box-name{color:var(--blue-dark)}
+.box-store{border-color:var(--green);border-left:3px solid var(--green);background:var(--green-pale)}
+.box-store .box-name{color:var(--green)}
+.box-vault{border-color:var(--gold);border-left:3px solid var(--gold);background:var(--gold-pale)}
+.box-vault .box-name{color:var(--gold)}
+.box-local-llm{border-color:var(--green);background:var(--green-pale)}
+.box-local-llm .box-name{color:var(--green)}
+.box-cloud-llm{border-color:var(--purple);background:var(--purple-pale)}
+.box-cloud-llm .box-name{color:var(--purple)}
+.box-outbound{border-color:var(--gold);border-right:3px solid var(--gold)}
+.box-blocked{border-color:var(--red);background:#fde8e8;opacity:.7}
+.box-blocked .box-name{color:var(--red)}
+.box-core{
+  border-color:var(--blue);
+  border-width:2px;
+  background:var(--navy-warm);
+}
+.box-core .box-name{color:rgba(255,255,255,.9);font-size:12px}
+.box-core .box-sub{color:rgba(255,255,255,.4)}
+
+/* port dots — connection anchor indicators */
+.port{
+  position:absolute;
+  width:8px;height:8px;
+  border-radius:50%;
+  border:1.5px solid var(--rule);
+  background:var(--white);
+  z-index:3;
+}
+.port-top{top:-4px;left:50%;transform:translateX(-50%)}
+.port-bottom{bottom:-4px;left:50%;transform:translateX(-50%)}
+.port-left{left:-4px;top:50%;transform:translateY(-50%)}
+.port-right{right:-4px;top:50%;transform:translateY(-50%)}
+.port.tier0{background:var(--wire-0);border-color:var(--wire-0)}
+.port.tier1{background:var(--wire-1);border-color:var(--wire-1)}
+.port.tier2{background:var(--wire-2);border-color:var(--wire-2)}
+.port.out{background:var(--wire-out);border-color:var(--wire-out)}
+
+/* ── TIER BADGE ── */
+.tier-badge{
+  display:inline-block;
+  font-family:'DM Mono',monospace;
+  font-size:8px;
+  letter-spacing:.06em;
+  padding:2px 5px;
+  border-radius:1px;
+  margin-top:4px;
+}
+.tb0{background:var(--green-pale);color:var(--green);border:1px solid rgba(26,122,74,.2)}
+.tb1{background:var(--blue-pale);color:var(--blue);border:1px solid rgba(0,51,173,.2)}
+.tb2{background:var(--purple-pale);color:var(--purple);border:1px solid rgba(107,26,138,.2)}
+
+/* section labels */
+.section-label{
+  text-align:center;
+  font-family:'DM Mono',monospace;
+  font-size:9px;
+  letter-spacing:.15em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:10px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.section-label::before,.section-label::after{content:'';flex:1;height:1px;background:var(--rule)}
+
+/* note labels on wires */
+.wire-note{
+  position:absolute;
+  font-family:'DM Mono',monospace;
+  font-size:8px;
+  color:var(--muted);
+  background:var(--off-white);
+  padding:1px 4px;
+  letter-spacing:.04em;
+  z-index:4;
+  white-space:nowrap;
+}
+
+/* sovereignty strip */
+.sov-strip{
+  background:var(--navy-warm);
+  margin:24px 40px 0;
+  padding:12px 24px;
+  display:flex;
+  align-items:center;
+  justify-content:space-around;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.sov-item{
+  font-family:'DM Mono',monospace;
+  font-size:9px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.5);
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+.sov-item.hi{color:var(--gold-light,#e8b84b)}
+
+.footer{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 40px 0;
+  margin-top:12px;
+  border-top:1px solid var(--rule);
+}
+.footer-brand{font-family:'Playfair Display',serif;font-size:13px;font-weight:700;color:var(--ink)}
+.footer-note{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.06em}
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav style="background:#04153f;padding:10px 32px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;border-bottom:2px solid rgba(196,145,26,.3)"><span style="font-family:'Playfair Display',serif;font-size:13px;font-weight:700;color:#fff;letter-spacing:.12em;margin-right:20px">🦅 PATHFINDER</span><a href="index.html" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.55);text-decoration:none;padding:4px 10px;letter-spacing:.08em">Home</a><a href="architecture.html" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.55);text-decoration:none;padding:4px 10px;letter-spacing:.08em">Architecture</a><a href="wirediagram.html" style="font-family:'DM Mono',monospace;font-size:10px;color:#c4911a;text-decoration:none;padding:4px 10px;letter-spacing:.08em">Wire Diagram</a><a href="layers.html" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.55);text-decoration:none;padding:4px 10px;letter-spacing:.08em">Layer Map</a><a href="components.html" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.55);text-decoration:none;padding:4px 10px;letter-spacing:.08em">Components</a><a href="capabilities.html" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.55);text-decoration:none;padding:4px 10px;letter-spacing:.08em">Capabilities</a></nav>
+<div class="top-stripe"></div>
+
+<div class="header">
+  <div class="brand">Pathfinder</div>
+  <div class="header-center">
+    <div class="header-title">System Wire Diagram</div>
+    <div class="header-sub">Data flow · Storage · Integrations · Tier paths</div>
+  </div>
+  <div class="header-right">v1.0.0-alpha<br/>March 2026</div>
+</div>
+
+<div class="legend">
+  <div class="li"><div class="lw lw0"></div>Settler — local only, no LLM</div>
+  <div class="li"><div class="lw lw1"></div>Scout — local + cloud LLM</div>
+  <div class="li"><div class="lw lw2"></div>Pioneer — local LLM only</div>
+  <div class="li"><div class="lw lwo"></div>Outbound — publish / tools</div>
+  <div class="li"><div class="lw lwb"></div>Blocked by architecture</div>
+</div>
+
+<div class="diagram" id="diagram">
+
+<!-- SVG WIRES -->
+<svg class="wires" id="wires" xmlns="http://www.w3.org/2000/svg"></svg>
+
+<!-- ROW 1 — INBOUND CHANNELS -->
+<div class="section-label">Inbound Channels</div>
+<div class="row" id="row-inbound">
+  <div class="box box-inbound" id="b-webui">
+    <div class="port port-bottom tier1"></div>
+    <span class="box-icon">🌐</span>
+    <div class="box-name">Web UI</div>
+    <div class="box-sub">localhost:3000<br/>browser</div>
+    <span class="tier-badge tb1">Scout+</span>
+  </div>
+  <div class="box box-inbound" id="b-telegram">
+    <div class="port port-bottom tier0"></div>
+    <span class="box-icon">📱</span>
+    <div class="box-name">Telegram</div>
+    <div class="box-sub">polling mode<br/>sender whitelist</div>
+    <span class="tier-badge tb0">All tiers</span>
+  </div>
+  <div class="box box-inbound" id="b-signal" style="opacity:.5;border-style:dashed">
+    <div class="port port-bottom tier0" style="opacity:.4"></div>
+    <span class="box-icon">📡</span>
+    <div class="box-name">Signal</div>
+    <div class="box-sub">coming soon<br/>phase 4+</div>
+    <span class="tier-badge" style="background:#eee;color:#999;border:1px solid #ddd">Planned</span>
+  </div>
+</div>
+
+<div class="row-spacer"></div>
+
+<!-- ROW 2 — GATEWAY -->
+<div class="section-label">Gateway Layer</div>
+<div class="row" id="row-gateway">
+  <div class="box box-core" id="b-gateway" style="min-width:280px">
+    <div class="port port-top tier0"></div>
+    <div class="port port-bottom tier0"></div>
+    <span class="box-icon" style="color:rgba(255,255,255,.8)">⚡</span>
+    <div class="box-name">gateway.js</div>
+    <div class="box-sub">Sender auth · PIN check · Persona routing<br/>Intent token detection · Session state</div>
+  </div>
+</div>
+
+<div class="row-spacer"></div>
+
+<!-- ROW 3 — PATHFINDER CORE -->
+<div class="section-label">Pathfinder Core — server.js</div>
+<div class="row" id="row-core">
+  <div class="box box-core" id="b-intent" style="min-width:140px">
+    <div class="port port-top tier0"></div>
+    <div class="port port-bottom tier0"></div>
+    <div class="port port-right tier1"></div>
+    <span class="box-icon" style="color:rgba(255,255,255,.8)">🔀</span>
+    <div class="box-name">Intent Router</div>
+    <div class="box-sub">token: → store<br/>natural → LLM</div>
+  </div>
+  <div class="box box-core" id="b-persona" style="min-width:140px">
+    <div class="port port-top tier1"></div>
+    <div class="port port-bottom tier1"></div>
+    <div class="port port-left tier1"></div>
+    <span class="box-icon" style="color:rgba(255,255,255,.8)">👤</span>
+    <div class="box-name">Persona Engine</div>
+    <div class="box-sub">tier enforce<br/>vault access<br/>system prompt</div>
+  </div>
+  <div class="box box-core" id="b-tools" style="min-width:140px">
+    <div class="port port-top tier1"></div>
+    <div class="port port-bottom out"></div>
+    <span class="box-icon" style="color:rgba(255,255,255,.8)">🔧</span>
+    <div class="box-name">Tool Factory</div>
+    <div class="box-sub">web search<br/>calculator<br/>n8n webhooks</div>
+  </div>
+</div>
+
+<div class="row-spacer"></div>
+
+<!-- ROW 4 — STORAGE -->
+<div class="section-label">Local Storage — Your Machine</div>
+<div class="row" id="row-storage">
+  <div class="box box-store" id="b-memory">
+    <div class="port port-top tier0"></div>
+    <div class="port port-bottom tier1"></div>
+    <span class="box-icon">💾</span>
+    <div class="box-name">Memory</div>
+    <div class="box-sub">data/memory/<br/>SOUL.md<br/>vectors.json<br/>ego-[id]/episodic</div>
+    <span class="tier-badge tb0">All tiers</span>
+  </div>
+  <div class="box box-vault" id="b-vault">
+    <div class="port port-top tier0"></div>
+    <div class="port port-bottom out"></div>
+    <span class="box-icon">🔐</span>
+    <div class="box-name">Soul Vault</div>
+    <div class="box-sub">soul.vault<br/>AES-256-GCM<br/>keys · cards · docs<br/>passwords</div>
+    <span class="tier-badge tb0">Encrypted · local</span>
+  </div>
+  <div class="box box-store" id="b-convos">
+    <div class="port port-top tier1"></div>
+    <span class="box-icon">💬</span>
+    <div class="box-name">Conversations</div>
+    <div class="box-sub">data/conversations/<br/>per-persona<br/>chat history</div>
+    <span class="tier-badge tb1">Scout+</span>
+  </div>
+  <div class="box box-store" id="b-personas">
+    <div class="port port-top tier0"></div>
+    <span class="box-icon">🗂</span>
+    <div class="box-name">Persona Configs</div>
+    <div class="box-sub">data/personas/<br/>p1.json · p2.json<br/>tier · model · tone</div>
+    <span class="tier-badge tb0">All tiers</span>
+  </div>
+</div>
+
+<div class="row-spacer"></div>
+
+<!-- ROW 5 — LLM LAYER -->
+<div class="section-label">LLM Inference Layer</div>
+<div class="row" id="row-llm">
+
+  <!-- LOCAL LLMs -->
+  <div class="box box-local-llm" id="b-ollama">
+    <div class="port port-top tier1"></div>
+    <div class="port port-top tier2" style="left:30%"></div>
+    <span class="box-icon">🦙</span>
+    <div class="box-name">Ollama</div>
+    <div class="box-sub">Llama 3<br/>DeepSeek R1<br/>Qwen3<br/>localhost:11434</div>
+    <span class="tier-badge tb1">Scout+</span>
+    <span class="tier-badge tb2" style="margin-left:2px">Pioneer ✓</span>
+  </div>
+
+  <div class="box box-local-llm" id="b-bitnet">
+    <div class="port port-top tier1"></div>
+    <span class="box-icon">⚙️</span>
+    <div class="box-name">BitNet</div>
+    <div class="box-sub">1-bit quantized<br/>CPU inference<br/>localhost:11435</div>
+    <span class="tier-badge tb1">Scout+</span>
+  </div>
+
+  <!-- BLOCKED separator -->
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:60px">
+    <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--red);letter-spacing:.05em;text-transform:uppercase;text-align:center;line-height:1.6">Pioneer<br/>blocks<br/>cloud<br/>▼</div>
+    <div style="width:2px;flex:1;background:repeating-linear-gradient(180deg,var(--red) 0,var(--red) 4px,transparent 4px,transparent 8px);min-height:40px;margin-top:4px"></div>
+  </div>
+
+  <!-- CLOUD LLMs -->
+  <div class="box box-cloud-llm" id="b-gemini">
+    <div class="port port-top tier1"></div>
+    <span class="box-icon">✨</span>
+    <div class="box-name">Gemini</div>
+    <div class="box-sub">2.5 Flash (free)<br/>Google API</div>
+    <span class="tier-badge tb1">Scout only</span>
+  </div>
+  <div class="box box-cloud-llm" id="b-claude">
+    <div class="port port-top tier1"></div>
+    <span class="box-icon">🔮</span>
+    <div class="box-name">Claude</div>
+    <div class="box-sub">Sonnet · Opus<br/>Anthropic API</div>
+    <span class="tier-badge tb1">Scout only</span>
+  </div>
+  <div class="box box-cloud-llm" id="b-gpt">
+    <div class="port port-top tier1"></div>
+    <span class="box-icon">🟢</span>
+    <div class="box-name">ChatGPT</div>
+    <div class="box-sub">GPT-4o<br/>OpenAI API</div>
+    <span class="tier-badge tb1">Scout only</span>
+  </div>
+  <div class="box box-cloud-llm" id="b-grok">
+    <div class="port port-top tier1"></div>
+    <span class="box-icon">𝕏</span>
+    <div class="box-name">Grok</div>
+    <div class="box-sub">xAI API<br/>coming soon</div>
+    <span class="tier-badge" style="background:#eee;color:#999;border:1px solid #ddd;font-size:8px;padding:2px 5px;display:inline-block;margin-top:4px">Planned</span>
+  </div>
+
+</div>
+
+<div class="row-spacer"></div>
+
+<!-- ROW 6 — OUTBOUND -->
+<div class="section-label">Outbound Integrations</div>
+<div class="row" id="row-outbound">
+  <div class="box box-outbound" id="b-blotato">
+    <div class="port port-top out"></div>
+    <span class="box-icon">📤</span>
+    <div class="box-name">Blotato</div>
+    <div class="box-sub">Instagram<br/>Twitter/X<br/>LinkedIn</div>
+    <span class="tier-badge tb0">All tiers</span>
+  </div>
+  <div class="box box-outbound" id="b-calendar">
+    <div class="port port-top out"></div>
+    <span class="box-icon">📅</span>
+    <div class="box-name">Google Calendar</div>
+    <div class="box-sub">n8n OAuth<br/>read · write</div>
+    <span class="tier-badge tb1">Scout+</span>
+  </div>
+  <div class="box box-outbound" id="b-gmail">
+    <div class="port port-top out"></div>
+    <span class="box-icon">📧</span>
+    <div class="box-name">Gmail</div>
+    <div class="box-sub">n8n OAuth<br/>read · send</div>
+    <span class="tier-badge tb1">Scout+</span>
+  </div>
+  <div class="box box-outbound" id="b-search">
+    <div class="port port-top tier1"></div>
+    <span class="box-icon">🔍</span>
+    <div class="box-name">Web Search</div>
+    <div class="box-sub">DDG · Serper<br/>live results</div>
+    <span class="tier-badge tb1">Scout+</span>
+  </div>
+  <div class="box box-outbound" id="b-soul-export" style="border-color:var(--gold);border-right:none;border-left:3px solid var(--gold);background:var(--gold-pale)">
+    <div class="port port-top out"></div>
+    <span class="box-icon">💼</span>
+    <div class="box-name">.soul Export</div>
+    <div class="box-sub">encrypted zip<br/>portable<br/>any Pathfinder instance</div>
+    <span class="tier-badge tb0">All tiers</span>
+  </div>
+</div>
+
+</div><!-- /diagram -->
+
+<!-- SOVEREIGNTY STRIP -->
+<div class="sov-strip">
+  <div class="sov-item hi">🔐 Vault: AES-256 — never leaves machine</div>
+  <div class="sov-item">💾 Memory: local files + vectors</div>
+  <div class="sov-item hi">⛔ Cloud LLM: conversation context only · vault never sent</div>
+  <div class="sov-item">👤 Personas: isolated · tiered · scoped</div>
+  <div class="sov-item hi">✦ Sovereignty by design. — architecture, not policy</div>
+</div>
+
+<div class="footer">
+  <div class="footer-brand">Pathfinder</div>
+  <div class="footer-note">Open Neptune Project · Free &amp; Open Source · v1.0.0-alpha · March 2026</div>
+</div>
+
+</div><!-- /page -->
+
+<script>
+// Draw SVG wires connecting boxes
+window.addEventListener('load', () => {
+  const svg = document.getElementById('wires');
+  const diagram = document.getElementById('diagram');
+  const dr = diagram.getBoundingClientRect();
+
+  function getCenter(id) {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return {
+      x: r.left - dr.left + r.width / 2,
+      y: r.top - dr.top + r.height / 2,
+      top: r.top - dr.top,
+      bottom: r.top - dr.top + r.height,
+      left: r.left - dr.left,
+      right: r.left - dr.left + r.width,
+      w: r.width,
+      h: r.height,
+    };
+  }
+
+  svg.setAttribute('width', diagram.offsetWidth);
+  svg.setAttribute('height', diagram.offsetHeight);
+
+  function wire(x1, y1, x2, y2, color, dashed=false, label='') {
+    const mid = (y1 + y2) / 2;
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const d = `M ${x1} ${y1} C ${x1} ${mid}, ${x2} ${mid}, ${x2} ${y2}`;
+    path.setAttribute('d', d);
+    path.setAttribute('stroke', color);
+    path.setAttribute('stroke-width', '2');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('opacity', '0.75');
+    if (dashed) path.setAttribute('stroke-dasharray', '5,4');
+    // arrowhead
+    const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    const aw = 5, ah = 7;
+    arrow.setAttribute('points', `${x2-aw},${y2-ah} ${x2+aw},${y2-ah} ${x2},${y2}`);
+    arrow.setAttribute('fill', color);
+    arrow.setAttribute('opacity', '0.75');
+    svg.appendChild(path);
+    svg.appendChild(arrow);
+  }
+
+  function hWire(x1, y1, x2, y2, color, dashed=false) {
+    const mid = (x1 + x2) / 2;
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const d = `M ${x1} ${y1} C ${mid} ${y1}, ${mid} ${y2}, ${x2} ${y2}`;
+    path.setAttribute('d', d);
+    path.setAttribute('stroke', color);
+    path.setAttribute('stroke-width', '2');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('opacity', '0.75');
+    if (dashed) path.setAttribute('stroke-dasharray', '5,4');
+    const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    const aw = 5, ah = 7;
+    arrow.setAttribute('points', `${x2-ah},${y2-aw} ${x2-ah},${y2+aw} ${x2},${y2}`);
+    arrow.setAttribute('fill', color);
+    arrow.setAttribute('opacity', '0.75');
+    svg.appendChild(path);
+    svg.appendChild(arrow);
+  }
+
+  const C = {
+    webui:    getCenter('b-webui'),
+    telegram: getCenter('b-telegram'),
+    signal:   getCenter('b-signal'),
+    gateway:  getCenter('b-gateway'),
+    intent:   getCenter('b-intent'),
+    persona:  getCenter('b-persona'),
+    tools:    getCenter('b-tools'),
+    memory:   getCenter('b-memory'),
+    vault:    getCenter('b-vault'),
+    convos:   getCenter('b-convos'),
+    personas: getCenter('b-personas'),
+    ollama:   getCenter('b-ollama'),
+    bitnet:   getCenter('b-bitnet'),
+    gemini:   getCenter('b-gemini'),
+    claude:   getCenter('b-claude'),
+    gpt:      getCenter('b-gpt'),
+    grok:     getCenter('b-grok'),
+    blotato:  getCenter('b-blotato'),
+    calendar: getCenter('b-calendar'),
+    gmail:    getCenter('b-gmail'),
+    search:   getCenter('b-search'),
+    export:   getCenter('b-soul-export'),
+  };
+
+  const t0 = '#1a7a4a';
+  const t1 = '#0033AD';
+  const t2 = '#6b1a8a';
+  const out = '#c4911a';
+  const blk = '#b81818';
+
+  // Inbound → Gateway
+  wire(C.webui.x,    C.webui.bottom,    C.gateway.x-40, C.gateway.top,    t1);
+  wire(C.telegram.x, C.telegram.bottom, C.gateway.x,    C.gateway.top,    t0);
+  wire(C.signal.x,   C.signal.bottom,   C.gateway.x+40, C.gateway.top,    t0, true);
+
+  // Gateway → Intent Router
+  wire(C.gateway.x, C.gateway.bottom, C.intent.x, C.intent.top, t0);
+
+  // Intent → Persona (horizontal)
+  hWire(C.intent.right, C.intent.y, C.persona.left, C.persona.y, t1);
+
+  // Intent → Memory (Tier 0 path — store token)
+  wire(C.intent.x - 20, C.intent.bottom, C.memory.x, C.memory.top, t0);
+
+  // Persona → Convos
+  wire(C.persona.x, C.persona.bottom, C.convos.x, C.convos.top, t1);
+
+  // Persona → Vault
+  wire(C.persona.x + 20, C.persona.bottom, C.vault.x, C.vault.top, t0);
+
+  // Persona → Personas config (read)
+  wire(C.persona.x + 40, C.persona.bottom, C.personas.x, C.personas.top, t0);
+
+  // Tools → outbound
+  wire(C.tools.x - 20, C.tools.bottom, C.calendar.x, C.calendar.top, out);
+  wire(C.tools.x,      C.tools.bottom, C.gmail.x,    C.gmail.top,    out);
+  wire(C.tools.x + 20, C.tools.bottom, C.search.x,   C.search.top,   t1);
+
+  // Memory → Ollama (vector embedding — Tier 1)
+  wire(C.memory.x, C.memory.bottom, C.ollama.x - 10, C.ollama.top, t1);
+
+  // Persona → Ollama (Tier 1 + Tier 2)
+  wire(C.persona.x - 30, C.persona.bottom, C.ollama.x + 10, C.ollama.top, t1);
+  wire(C.persona.x - 20, C.persona.bottom, C.bitnet.x,      C.bitnet.top, t1);
+
+  // Persona → Cloud LLMs (Scout only)
+  wire(C.persona.x + 10, C.persona.bottom, C.gemini.x, C.gemini.top, t1);
+  wire(C.persona.x + 20, C.persona.bottom, C.claude.x, C.claude.top, t1);
+  wire(C.persona.x + 30, C.persona.bottom, C.gpt.x,    C.gpt.top,    t1);
+  wire(C.persona.x + 40, C.persona.bottom, C.grok.x,   C.grok.top,   t1, true);
+
+  // Vault → Export (outbound)
+  wire(C.vault.x, C.vault.bottom, C.export.x, C.export.top, out);
+
+  // Vault → Blotato
+  wire(C.vault.x - 10, C.vault.bottom, C.blotato.x, C.blotato.top, out);
+});
+</script>
+</body>
+</html>
