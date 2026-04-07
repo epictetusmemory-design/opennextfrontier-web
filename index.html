@@ -457,18 +457,36 @@ function submitEmail() {
   const thanks = document.getElementById('email-thanks');
   const capture = document.querySelector('.email-capture');
   const note = document.querySelector('.email-note');
+  const btn = document.querySelector('.email-capture button');
   const val = input.value.trim();
   if (!val || !val.includes('@')) {
     input.style.outline = '2px solid #b81818';
     setTimeout(() => input.style.outline = '', 1500);
     return;
   }
-  // Store locally — replace this href with your form endpoint or Cloudflare email worker
-  capture.style.display = 'none';
-  note.style.display = 'none';
-  thanks.style.display = 'block';
-  // Optional: send to a backend
-  // fetch('/api/subscribe', { method:'POST', body: JSON.stringify({email: val}), headers:{'Content-Type':'application/json'} });
+  btn.textContent = '...';
+  btn.disabled = true;
+  fetch('https://api.web3forms.com/submit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      access_key: '374f8e9a-a262-4451-9706-a1f9f5a2c339',
+      subject: 'Pathfinder — New Download Notification Request',
+      email: val,
+      message: 'New signup from opennextfrontier.com: ' + val
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    capture.style.display = 'none';
+    note.style.display = 'none';
+    thanks.style.display = 'block';
+  })
+  .catch(() => {
+    capture.style.display = 'none';
+    note.style.display = 'none';
+    thanks.style.display = 'block';
+  });
 }
 document.getElementById('email-input').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') submitEmail();
