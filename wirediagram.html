@@ -50,11 +50,12 @@ html,body{
 .top-stripe{height:5px;background:linear-gradient(to right,var(--blue),var(--gold),var(--blue))}
 .header{
   background:var(--navy-warm);
-  padding:18px 40px;
+  padding:20px 40px;
   display:flex;
   align-items:center;
   justify-content:space-between;
-  margin-bottom:24px;
+  margin-bottom:0;
+  width:100%;
 }
 .brand{font-family:'Playfair Display',serif;font-size:14px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--white)}
 .header-center{text-align:center}
@@ -250,8 +251,6 @@ html,body{
 </style>
 </head>
 <body>
-<div class="page">
-
 <nav style="background:#04153f;padding:10px 32px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;border-bottom:2px solid rgba(196,145,26,.3);position:sticky;top:0;z-index:100"><span style="font-family:'Playfair Display',serif;font-size:13px;font-weight:700;color:#fff;letter-spacing:.12em;margin-right:20px">🦅 PATHFINDER</span><a href="index.html" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.55);text-decoration:none;padding:4px 10px;letter-spacing:.08em">Home</a><a href="architecture.html" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.55);text-decoration:none;padding:4px 10px;letter-spacing:.08em">Architecture</a><a href="wirediagram.html" style="font-family:'DM Mono',monospace;font-size:10px;color:#c4911a;text-decoration:none;padding:4px 10px;letter-spacing:.08em">Wire Diagram</a><a href="layers.html" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.55);text-decoration:none;padding:4px 10px;letter-spacing:.08em">Layer Map</a><a href="components.html" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.55);text-decoration:none;padding:4px 10px;letter-spacing:.08em">Components</a><a href="capabilities.html" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.55);text-decoration:none;padding:4px 10px;letter-spacing:.08em">Capabilities</a><a href="openclaw.html" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.55);text-decoration:none;padding:4px 10px;letter-spacing:.08em">vs OpenClaw</a><a href="whitepaper.html" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.55);text-decoration:none;padding:4px 10px;letter-spacing:.08em">White Paper</a></nav>
 <div class="top-stripe"></div>
 
@@ -262,6 +261,8 @@ html,body{
   </div>
   <div class="header-sub">v1.0.0-alpha · March 2026</div>
 </div>
+
+<div class="page">
 
 <div class="legend">
   <div class="li"><div class="lw lw0"></div>Settler — local only, no LLM</div>
@@ -650,5 +651,6 @@ window.addEventListener('load', () => {
   wire(C.vault.x - 10, C.vault.bottom, C.blotato.x, C.blotato.top, out);
 });
 </script>
+</div><!-- /page -->
 </body>
 </html>
