@@ -58,9 +58,9 @@ html,body{
 }
 .brand{font-family:'Playfair Display',serif;font-size:14px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--white)}
 .header-center{text-align:center}
-.header-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--white)}
-.header-sub{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:2px}
-.header-right{font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,.3);text-align:right;letter-spacing:.06em;line-height:1.8}
+.header-title{font-family:'Playfair Display',serif;font-size:clamp(22px,3vw,32px);font-weight:700;color:var(--white);text-align:center}
+.header-sub{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.35);text-align:right}
+.header-right{font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.35);text-align:right;letter-spacing:.1em}
 
 /* ── LEGEND ── */
 .legend{
@@ -259,9 +259,8 @@ html,body{
   <div class="brand">Pathfinder</div>
   <div class="header-center">
     <div class="header-title">System Wire Diagram</div>
-    <div class="header-sub">Data flow · Storage · Integrations · Tier paths</div>
   </div>
-  <div class="header-right">v1.0.0-alpha<br/>March 2026</div>
+  <div class="header-sub">v1.0.0-alpha · March 2026</div>
 </div>
 
 <div class="legend">
