@@ -250,26 +250,9 @@ html,body{
 </style>
 </head>
 <body>
-<nav style="background:#04153f;padding:0 32px;display:flex;align-items:center;gap:2px;flex-wrap:wrap;border-bottom:2px solid rgba(196,145,26,.3);position:sticky;top:0;z-index:100;min-height:44px;">
-  <a href="index.html" style="font-family:'Playfair Display',serif;font-size:14px;font-weight:700;color:#fff;letter-spacing:.1em;margin-right:16px;text-decoration:none;white-space:nowrap;">🦅 Pathfinder</a>
-  <a href="index.html" id="nav-home" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:12px 9px;letter-spacing:.07em;white-space:nowrap;">Home</a>
-  <a href="architecture.html" id="nav-arch" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:12px 9px;letter-spacing:.07em;white-space:nowrap;">Architecture</a>
-  <a href="wirediagram.html" id="nav-wire" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:12px 9px;letter-spacing:.07em;white-space:nowrap;">Wire Diagram</a>
-  <a href="layers.html" id="nav-layers" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:12px 9px;letter-spacing:.07em;white-space:nowrap;">Layer Map</a>
-  <a href="components.html" id="nav-comp" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:12px 9px;letter-spacing:.07em;white-space:nowrap;">Components</a>
-  <a href="capabilities.html" id="nav-cap" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:12px 9px;letter-spacing:.07em;white-space:nowrap;">Capabilities</a>
-  <a href="openclaw.html" id="nav-claw" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:12px 9px;letter-spacing:.07em;white-space:nowrap;">vs OpenClaw</a>
-  <a href="whitepaper.html" id="nav-wp" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:12px 9px;letter-spacing:.07em;white-space:nowrap;">White Paper</a>
-  <div style="flex:1;"></div>
-  <a href="index.html#download" style="font-family:'DM Mono',monospace;font-size:10px;background:#c4911a;color:#fff;padding:8px 16px;letter-spacing:.08em;text-decoration:none;white-space:nowrap;">⬇ Download</a>
-</nav>
-<script>
-  var el = document.getElementById('nav-wire');
-  if(el) el.style.color = '#c4911a';
-</script>
 <div class="page">
 
-
+<nav style="background:#04153f;padding:10px 32px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;border-bottom:2px solid rgba(196,145,26,.3);position:sticky;top:0;z-index:100"><span style="font-family:'Playfair Display',serif;font-size:13px;font-weight:700;color:#fff;letter-spacing:.12em;margin-right:20px">🦅 PATHFINDER</span><a href="index.html" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.55);text-decoration:none;padding:4px 10px;letter-spacing:.08em">Home</a><a href="architecture.html" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.55);text-decoration:none;padding:4px 10px;letter-spacing:.08em">Architecture</a><a href="wirediagram.html" style="font-family:'DM Mono',monospace;font-size:10px;color:#c4911a;text-decoration:none;padding:4px 10px;letter-spacing:.08em">Wire Diagram</a><a href="layers.html" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.55);text-decoration:none;padding:4px 10px;letter-spacing:.08em">Layer Map</a><a href="components.html" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.55);text-decoration:none;padding:4px 10px;letter-spacing:.08em">Components</a><a href="capabilities.html" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.55);text-decoration:none;padding:4px 10px;letter-spacing:.08em">Capabilities</a><a href="openclaw.html" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.55);text-decoration:none;padding:4px 10px;letter-spacing:.08em">vs OpenClaw</a><a href="whitepaper.html" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.55);text-decoration:none;padding:4px 10px;letter-spacing:.08em">White Paper</a></nav>
 <div class="top-stripe"></div>
 
 <div class="header">
@@ -329,7 +312,7 @@ html,body{
     <div class="port port-top tier0"></div>
     <div class="port port-bottom tier0"></div>
     <span class="box-icon" style="color:rgba(255,255,255,.8)">⚡</span>
-    <div class="box-name">gateway.js</div>
+    <div class="box-name">gateway/</div>
     <div class="box-sub">Sender auth · PIN check · Persona routing<br/>Intent token detection · Session state</div>
   </div>
 </div>
@@ -337,7 +320,7 @@ html,body{
 <div class="row-spacer"></div>
 
 <!-- ROW 3 — PATHFINDER CORE -->
-<div class="section-label">Pathfinder Core — server.js</div>
+<div class="section-label">Pathfinder Core — Rust · Tauri</div>
 <div class="row" id="row-core">
   <div class="box box-core" id="b-intent" style="min-width:140px">
     <div class="port port-top tier0"></div>
@@ -519,7 +502,7 @@ html,body{
 
 <div class="footer">
   <div class="footer-brand">Pathfinder</div>
-  <div class="footer-note">Open Neptune Project · Free &amp; Open Source · v1.0.0-alpha · March 2026</div>
+  <div class="footer-note">OpenNextFrontier Project · Free &amp; Open Source · v1.0.0-alpha · March 2026</div>
 </div>
 
 </div><!-- /page -->

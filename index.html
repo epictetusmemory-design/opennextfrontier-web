@@ -261,26 +261,21 @@ html,body{margin:0;padding:0;background:var(--warm-white);font-family:'DM Sans',
 </style>
 </head>
 <body>
-<nav style="background:#04153f;padding:0 32px;display:flex;align-items:center;gap:2px;flex-wrap:wrap;border-bottom:2px solid rgba(196,145,26,.3);position:sticky;top:0;z-index:100;min-height:44px;">
-  <a href="index.html" style="font-family:'Playfair Display',serif;font-size:14px;font-weight:700;color:#fff;letter-spacing:.1em;margin-right:16px;text-decoration:none;white-space:nowrap;">🦅 Pathfinder</a>
-  <a href="index.html" id="nav-home" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:12px 9px;letter-spacing:.07em;white-space:nowrap;">Home</a>
-  <a href="architecture.html" id="nav-arch" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:12px 9px;letter-spacing:.07em;white-space:nowrap;">Architecture</a>
-  <a href="wirediagram.html" id="nav-wire" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:12px 9px;letter-spacing:.07em;white-space:nowrap;">Wire Diagram</a>
-  <a href="layers.html" id="nav-layers" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:12px 9px;letter-spacing:.07em;white-space:nowrap;">Layer Map</a>
-  <a href="components.html" id="nav-comp" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:12px 9px;letter-spacing:.07em;white-space:nowrap;">Components</a>
-  <a href="capabilities.html" id="nav-cap" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:12px 9px;letter-spacing:.07em;white-space:nowrap;">Capabilities</a>
-  <a href="openclaw.html" id="nav-claw" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:12px 9px;letter-spacing:.07em;white-space:nowrap;">vs OpenClaw</a>
-  <a href="whitepaper.html" id="nav-wp" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);text-decoration:none;padding:12px 9px;letter-spacing:.07em;white-space:nowrap;">White Paper</a>
-  <div style="flex:1;"></div>
-  <a href="index.html#download" style="font-family:'DM Mono',monospace;font-size:10px;background:#c4911a;color:#fff;padding:8px 16px;letter-spacing:.08em;text-decoration:none;white-space:nowrap;">⬇ Download</a>
-</nav>
-<script>
-  var el = document.getElementById('nav-home');
-  if(el) el.style.color = '#c4911a';
-</script>
 
 <!-- SITE NAV -->
-
+<nav class="site-nav">
+  <a href="index.html" class="nav-brand">🦅 Pathfinder</a>
+  <a href="index.html" class="active">Home</a>
+  <a href="architecture.html">Architecture</a>
+  <a href="wirediagram.html">Wire Diagram</a>
+  <a href="layers.html">Layer Map</a>
+  <a href="components.html">Components</a>
+  <a href="capabilities.html">Capabilities</a>
+  <a href="openclaw.html">vs OpenClaw</a>
+  <a href="whitepaper.html">White Paper</a>
+  <div class="nav-spacer"></div>
+  <a href="#download" class="nav-dl">⬇ Download</a>
+</nav>
 
 <div class="poster">
 
@@ -462,36 +457,18 @@ function submitEmail() {
   const thanks = document.getElementById('email-thanks');
   const capture = document.querySelector('.email-capture');
   const note = document.querySelector('.email-note');
-  const btn = document.querySelector('.email-capture button');
   const val = input.value.trim();
   if (!val || !val.includes('@')) {
     input.style.outline = '2px solid #b81818';
     setTimeout(() => input.style.outline = '', 1500);
     return;
   }
-  btn.textContent = '...';
-  btn.disabled = true;
-  fetch('https://api.web3forms.com/submit', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      access_key: '374f8e9a-a262-4451-9706-a1f9f5a2c339',
-      subject: 'Pathfinder — New Download Notification Request',
-      email: val,
-      message: 'New signup from opennextfrontier.com: ' + val
-    })
-  })
-  .then(r => r.json())
-  .then(data => {
-    capture.style.display = 'none';
-    note.style.display = 'none';
-    thanks.style.display = 'block';
-  })
-  .catch(() => {
-    capture.style.display = 'none';
-    note.style.display = 'none';
-    thanks.style.display = 'block';
-  });
+  // Store locally — replace this href with your form endpoint or Cloudflare email worker
+  capture.style.display = 'none';
+  note.style.display = 'none';
+  thanks.style.display = 'block';
+  // Optional: send to a backend
+  // fetch('/api/subscribe', { method:'POST', body: JSON.stringify({email: val}), headers:{'Content-Type':'application/json'} });
 }
 document.getElementById('email-input').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') submitEmail();
