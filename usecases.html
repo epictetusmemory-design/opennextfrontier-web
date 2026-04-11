@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>What Can Pathfinder Do For Me? · OpenNextFrontier</title>
+  <meta name="description" content="Real things Pathfinder does today — from saving passwords to running private AI on your machine. No technical knowledge required." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0c0c0e;
+      --surface: #111114;
+      --surface-2: #16161a;
+      --surface-3: #1c1c22;
+      --border: rgba(255,255,255,0.07);
+      --border-hi: rgba(255,255,255,0.13);
+      --text: #e8e6e0;
+      --muted: #7a7870;
+      --muted-2: #4a4845;
+      --accent: #c8a96e;
+      --accent-lo: rgba(200,169,110,0.08);
+      --accent-mid: rgba(200,169,110,0.18);
+      --green: #7cb87a;
+      --green-lo: rgba(124,184,122,0.1);
+      --blue: #7ca8c8;
+      --blue-lo: rgba(124,168,200,0.1);
+      --purple: #a87cc8;
+      --purple-lo: rgba(168,124,200,0.1);
+      --font: 'Sora', sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(12,12,14,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      display: flex; align-items: center; gap: 0;
+      height: 52px;
+    }
+    .nav-brand {
+      font-size: 15px; font-weight: 700;
+      color: var(--accent); text-decoration: none;
+      margin-right: 32px; white-space: nowrap;
+      letter-spacing: -0.01em;
+    }
+    .nav-links {
+      display: flex; align-items: center; gap: 2px;
+      flex: 1; overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .nav-links::-webkit-scrollbar { display: none; }
+    .nav-links a {
+      font-size: 12px; font-weight: 500;
+      color: var(--muted); text-decoration: none;
+      padding: 6px 11px; border-radius: 6px;
+      transition: color .15s, background .15s;
+      white-space: nowrap;
+    }
+    .nav-links a:hover { color: var(--text); background: var(--surface-2); }
+    .nav-links a.active { color: var(--accent); background: var(--accent-lo); }
+
+    /* ── LAYOUT ── */
+    .page { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 80px 0 56px;
+      text-align: center;
+    }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--accent);
+      background: var(--accent-lo);
+      border: 1px solid rgba(200,169,110,.2);
+      padding: 5px 14px; border-radius: 20px;
+      margin-bottom: 28px;
+    }
+    .hero h1 {
+      font-size: clamp(32px, 5vw, 52px);
+      font-weight: 800; line-height: 1.1;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      margin-bottom: 20px;
+    }
+    .hero h1 em { font-style: normal; color: var(--accent); }
+    .hero-sub {
+      font-size: 17px; color: var(--muted);
+      max-width: 580px; margin: 0 auto 40px;
+      line-height: 1.65;
+    }
+    .hero-note {
+      font-size: 12px; color: var(--muted-2);
+      font-family: var(--mono);
+    }
+
+    /* ── TIER JUMP NAV ── */
+    .tier-nav {
+      display: flex; gap: 10px; justify-content: center;
+      margin-bottom: 72px; flex-wrap: wrap;
+    }
+    .tier-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 20px;
+      background: var(--surface); border: 1px solid var(--border-hi);
+      border-radius: 10px; text-decoration: none;
+      font-size: 13px; font-weight: 600; color: var(--muted);
+      transition: all .2s;
+    }
+    .tier-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-lo); }
+    .tier-btn .tier-num {
+      font-size: 10px; font-weight: 700; font-family: var(--mono);
+      padding: 2px 7px; border-radius: 6px;
+      background: var(--surface-3); color: var(--muted-2);
+    }
+
+    /* ── TIER SECTION ── */
+    .tier-section { margin-bottom: 80px; }
+
+    .tier-header {
+      display: flex; align-items: flex-start; gap: 20px;
+      padding: 28px 32px;
+      background: var(--surface);
+      border: 1px solid var(--border-hi);
+      border-radius: 16px 16px 0 0;
+      border-bottom: none;
+    }
+    .tier-badge {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 4px; flex-shrink: 0;
+    }
+    .tier-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+    }
+    .tier-label {
+      font-size: 9px; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted-2);
+      font-family: var(--mono);
+    }
+    .tier-info { flex: 1; }
+    .tier-info h2 {
+      font-size: 24px; font-weight: 800; letter-spacing: -0.02em;
+      color: var(--text); margin-bottom: 6px;
+    }
+    .tier-info h2 span { color: var(--accent); }
+    .tier-info p {
+      font-size: 14px; color: var(--muted); line-height: 1.55;
+      max-width: 640px;
+    }
+    .tier-prereq {
+      margin-top: 10px;
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 600; font-family: var(--mono);
+      color: var(--green); background: var(--green-lo);
+      border: 1px solid rgba(124,184,122,.2);
+      padding: 4px 12px; border-radius: 8px;
+    }
+
+    .tier-cards {
+      display: grid; gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border-hi);
+      border-top: none;
+      border-radius: 0 0 16px 16px;
+      overflow: hidden;
+    }
+
+    .use-card {
+      background: var(--surface);
+      padding: 24px 28px;
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 16px;
+      align-items: start;
+      transition: background .15s;
+    }
+    .use-card:hover { background: var(--surface-2); }
+
+    .use-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .use-content h3 {
+      font-size: 15px; font-weight: 700;
+      color: var(--text); margin-bottom: 6px;
+      letter-spacing: -0.01em;
+    }
+    .use-content p {
+      font-size: 13px; color: var(--muted);
+      line-height: 1.6; margin-bottom: 10px;
+    }
+    .use-tags {
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .use-tag {
+      font-size: 10px; font-weight: 600; font-family: var(--mono);
+      padding: 3px 9px; border-radius: 6px;
+      border: 1px solid var(--border-hi); color: var(--muted-2);
+      background: var(--surface-3);
+    }
+    .use-tag.highlight {
+      color: var(--accent); border-color: rgba(200,169,110,.25);
+      background: var(--accent-lo);
+    }
+    .use-tag.green {
+      color: var(--green); border-color: rgba(124,184,122,.25);
+      background: var(--green-lo);
+    }
+    .use-tag.blue {
+      color: var(--blue); border-color: rgba(124,168,200,.25);
+      background: var(--blue-lo);
+    }
+
+    /* ── CALLOUT ── */
+    .callout {
+      margin: 20px 0 0;
+      padding: 14px 18px;
+      background: var(--accent-lo);
+      border: 1px solid rgba(200,169,110,.2);
+      border-radius: 10px;
+      font-size: 12px; color: var(--accent);
+      font-family: var(--mono); line-height: 1.6;
+    }
+    .callout strong { color: var(--accent); }
+
+    /* ── NEW BADGE ── */
+    .new-badge {
+      display: inline-flex; align-items: center;
+      font-size: 9px; font-weight: 800; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--accent);
+      background: var(--accent-mid);
+      border: 1px solid rgba(200,169,110,.35);
+      padding: 2px 7px; border-radius: 5px;
+      margin-left: 8px; vertical-align: middle;
+    }
+
+    /* ── START TABLE ── */
+    .start-section {
+      margin-bottom: 80px;
+    }
+    .start-section h2 {
+      font-size: 26px; font-weight: 800; letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    .start-section > p {
+      font-size: 14px; color: var(--muted); margin-bottom: 28px;
+    }
+    .start-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
+    }
+    .start-card {
+      background: var(--surface);
+      border: 1px solid var(--border-hi);
+      border-radius: 14px; padding: 22px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .start-card-top {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .start-card-icon {
+      font-size: 28px; flex-shrink: 0;
+    }
+    .start-card-title {
+      font-size: 15px; font-weight: 700; color: var(--text);
+    }
+    .start-card-tier {
+      font-size: 10px; font-weight: 700; font-family: var(--mono);
+      color: var(--muted-2);
+    }
+    .start-card p {
+      font-size: 13px; color: var(--muted); line-height: 1.55;
+    }
+    .start-card-action {
+      margin-top: auto;
+      font-size: 11px; font-weight: 700; font-family: var(--mono);
+      color: var(--accent);
+      padding: 8px 14px;
+      background: var(--accent-lo);
+      border: 1px solid rgba(200,169,110,.2);
+      border-radius: 8px;
+      display: block; text-align: center;
+      text-decoration: none;
+      transition: background .15s;
+    }
+    .start-card-action:hover { background: var(--accent-mid); }
+
+    /* ── DIVIDER ── */
+    .section-divider {
+      display: flex; align-items: center; gap: 16px;
+      margin: 0 0 48px;
+    }
+    .section-divider::before, .section-divider::after {
+      content: ''; flex: 1;
+      height: 1px; background: var(--border);
+    }
+    .section-divider span {
+      font-size: 11px; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted-2);
+      white-space: nowrap;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 24px;
+      text-align: center;
+    }
+    .footer-inner { max-width: 980px; margin: 0 auto; }
+    .footer-links {
+      display: flex; gap: 20px; justify-content: center;
+      flex-wrap: wrap; margin-bottom: 12px;
+    }
+    .footer-links a {
+      font-size: 12px; color: var(--muted);
+      text-decoration: none; transition: color .15s;
+    }
+    .footer-links a:hover { color: var(--accent); }
+    .footer-copy {
+      font-size: 11px; color: var(--muted-2);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      nav { padding: 0 16px; }
+      .page { padding: 0 16px; }
+      .tier-header { flex-direction: column; padding: 20px; }
+      .use-card { grid-template-columns: 1fr; }
+      .use-icon { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-brand">🦅 PATHFINDER</a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="wirediagram.html">Wire Diagram</a>
+    <a href="layers.html">Layer Map</a>
+    <a href="components.html">Components</a>
+    <a href="capabilities.html">Capabilities</a>
+    <a href="openclaw.html">vs OpenClaw</a>
+    <a href="usecases.html" class="active">Use Cases</a>
+    <a href="whitepaper.html">White Paper</a>
+  </div>
+</nav>
+
+<div class="page">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-eyebrow">✦ v0.1.7 · Real features, running today</div>
+    <h1>You don't need to understand AI<br>to use <em>Pathfinder.</em></h1>
+    <p class="hero-sub">
+      Start by saving a password. End up with a personal AI that knows your life,
+      runs on your machine, and answers to no one but you.
+    </p>
+    <p class="hero-note">↓ Pick your starting point</p>
+  </div>
+
+  <!-- TIER NAV -->
+  <div class="tier-nav">
+    <a href="#tier-0" class="tier-btn">
+      <span class="tier-num">TIER 0</span>
+      🏕️ Settler — No AI needed
+    </a>
+    <a href="#tier-1" class="tier-btn">
+      <span class="tier-num">TIER 1</span>
+      🔭 Scout — Local AI, free
+    </a>
+    <a href="#tier-2" class="tier-btn">
+      <span class="tier-num">TIER 2</span>
+      🚀 Pioneer — Add cloud AI
+    </a>
+    <a href="#start" class="tier-btn">
+      <span class="tier-num">↓</span>
+      Where do I start?
+    </a>
+  </div>
+
+  <!-- ── TIER 0 ── -->
+  <div class="tier-section" id="tier-0">
+    <div class="tier-header">
+      <div class="tier-badge">
+        <div class="tier-icon" style="background: rgba(200,169,110,0.1);">🏕️</div>
+        <div class="tier-label">Settler · Tier 0</div>
+      </div>
+      <div class="tier-info">
+        <h2>Before any AI — <span>Pathfinder is already useful.</span></h2>
+        <p>
+          No Ollama. No API key. No subscription. Tier 0 gives you an encrypted vault,
+          a private credentials manager, memory capture, a scheduler, and full Telegram
+          access — all completely offline.
+        </p>
+        <div class="tier-prereq">✓ No setup required — install Pathfinder and go</div>
+      </div>
+    </div>
+
+    <div class="tier-cards">
+
+      <div class="use-card">
+        <div class="use-icon" style="background: rgba(200,169,110,0.1);">🔑</div>
+        <div class="use-content">
+          <h3>Password &amp; Credentials Manager</h3>
+          <p>
+            Store usernames, passwords, URLs, and notes — all encrypted in your vault behind
+            a passphrase only you know. Import your existing passwords from LastPass, Bitwarden,
+            or any browser export (CSV). Export back to encrypted .pfcreds format or CSV.
+            The people who built Pathfinder have never seen your passwords. And never will.
+          </p>
+          <div class="use-tags">
+            <span class="use-tag highlight">AES-256 encrypted</span>
+            <span class="use-tag green">CSV import</span>
+            <span class="use-tag green">.pfcreds export</span>
+            <span class="use-tag">No cloud</span>
+          </div>
+          <div class="callout">
+            <strong>From Telegram:</strong> type <code>password: netflix</code> and your bot privately returns the password — no app to open, works from anywhere.
+          </div>
+        </div>
+      </div>
+
+      <div class="use-card">
+        <div class="use-icon" style="background: rgba(124,184,122,0.1);">📱</div>
+        <div class="use-content">
+          <h3>Telegram Gateway — Your Phone, Your AI</h3>
+          <p>
+            Connect Pathfinder to a private Telegram bot you own. Once set up, you can
+            save memories, journal, search your notes, retrieve passwords, and capture
+            photos — all from your phone, anywhere in the world. No public server. No
+            third-party app. Just a private Telegram bot talking to your own machine.
+          </p>
+          <div class="use-tags">
+            <span class="use-tag green">Works abroad</span>
+            <span class="use-tag">Private bot</span>
+            <span class="use-tag">PIN protection</span>
+            <span class="use-tag">No app install on phone</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="use-card">
+        <div class="use-icon" style="background: rgba(124,168,200,0.1);">🧠</div>
+        <div class="use-content">
+          <h3>Memory &amp; Journal Capture</h3>
+          <p>
+            Save anything to your encrypted local memory. From the desktop or from Telegram:
+            <code>memory: called the dentist, appointment April 20</code> or
+            <code>journal: great meeting today with the team</code>.
+            Everything is tagged by date, stored locally, and searchable instantly.
+            Your life archive, owned by you.
+          </p>
+          <div class="use-tags">
+            <span class="use-tag highlight">Local SQLite</span>
+            <span class="use-tag green">Telegram capture</span>
+            <span class="use-tag green">Photo + voice</span>
+            <span class="use-tag">Keyword search</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="use-card">
+        <div class="use-icon" style="background: rgba(168,124,200,0.1);">⏰</div>
+        <div class="use-content">
+          <h3>Scheduler — Set It and Forget It</h3>
+          <p>
+            Create recurring tasks that run on a schedule and deliver to Telegram or memory.
+            At Tier 0, use the scheduler for non-AI reminders and journal prompts.
+            At Tier 1 and above, the scheduler calls your local AI model and sends
+            morning briefs, news digests, and research summaries — automatically, while you sleep.
+          </p>
+          <div class="use-tags">
+            <span class="use-tag highlight">Timezone-aware</span>
+            <span class="use-tag green">Telegram delivery</span>
+            <span class="use-tag">Cron or preset</span>
+            <span class="use-tag">Run history</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="section-divider"><span>Upgrade when ready — no pressure</span></div>
+
+  <!-- ── TIER 1 ── -->
+  <div class="tier-section" id="tier-1">
+    <div class="tier-header">
+      <div class="tier-badge">
+        <div class="tier-icon" style="background: rgba(124,184,122,0.1);">🔭</div>
+        <div class="tier-label">Scout · Tier 1</div>
+      </div>
+      <div class="tier-info">
+        <h2>Local AI — <span>nothing leaves your machine.</span></h2>
+        <p>
+          Install Ollama (free), pull a model, and Pathfinder starts thinking.
+          Conversations, tool use, scheduled briefs — all running privately on your hardware.
+          No API account. No per-message cost. No data leaving your machine.
+        </p>
+        <div class="tier-prereq">✓ Requires: Ollama installed + one model pulled (e.g. qwen3)</div>
+      </div>
+    </div>
+
+    <div class="tier-cards">
+
+      <div class="use-card">
+        <div class="use-icon" style="background: rgba(124,184,122,0.1);">🤖</div>
+        <div class="use-content">
+          <h3>Private AI Chat — Completely Offline</h3>
+          <p>
+            Ask questions, get answers. Your conversations never touch a cloud server —
+            the AI runs on your machine using your GPU or CPU. Works with no internet connection.
+            Recommended models: <strong>qwen3</strong> for reasoning and tool use,
+            <strong>gemma4:e4b</strong> for best quality on an 8GB GPU,
+            <strong>llama3.2</strong> for fast general chat.
+          </p>
+          <div class="use-tags">
+            <span class="use-tag highlight">100% offline</span>
+            <span class="use-tag green">qwen3 · gemma4 · llama3</span>
+            <span class="use-tag green">No API cost</span>
+            <span class="use-tag">GPU or CPU</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="use-card">
+        <div class="use-icon" style="background: rgba(124,168,200,0.1);">💻</div>
+        <div class="use-content">
+          <h3>BitNet — AI on Any CPU, No GPU Required <span class="new-badge">NEW</span></h3>
+          <p>
+            BitNet b1.58 is a 2-billion parameter model that runs entirely on your CPU
+            using Microsoft's custom 1.58-bit inference engine. No graphics card needed.
+            Uses only 0.4GB of memory. If your machine doesn't have a dedicated GPU,
+            BitNet is your local AI option. Requires a one-time build from source —
+            ask Trailhead "how do I install BitNet?" for step-by-step instructions.
+          </p>
+          <div class="use-tags">
+            <span class="use-tag highlight">No GPU needed</span>
+            <span class="use-tag green">0.4GB memory</span>
+            <span class="use-tag green">Microsoft open source</span>
+            <span class="use-tag">CPU inference</span>
+          </div>
+          <div class="callout">
+            <strong>Note:</strong> BitNet via <code>ollama pull</code> downloads correctly but returns empty responses — Ollama does not support BitNet's custom kernels. Use the bitnet.cpp install for working inference. Ask Trailhead for the full guide.
+          </div>
+        </div>
+      </div>
+
+      <div class="use-card">
+        <div class="use-icon" style="background: rgba(200,169,110,0.1);">📚</div>
+        <div class="use-content">
+          <h3>AI That Knows Your Documents</h3>
+          <p>
+            Drop any Markdown file into your <code>docs\</code> folder and Pathfinder
+            indexes it automatically on startup. Ask the AI "what did I write about my
+            insurance policy?" and get an answer from your own files — no sending
+            documents anywhere. Trailhead uses this same system to answer questions
+            about Pathfinder itself.
+          </p>
+          <div class="use-tags">
+            <span class="use-tag highlight">BM25 local search</span>
+            <span class="use-tag green">Auto-indexed on startup</span>
+            <span class="use-tag">Markdown files</span>
+            <span class="use-tag">No cloud</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="use-card">
+        <div class="use-icon" style="background: rgba(168,124,200,0.1);">🌅</div>
+        <div class="use-content">
+          <h3>Scheduled AI Briefs — Delivered to Telegram</h3>
+          <p>
+            Every morning at 7am (your local timezone), Pathfinder runs your local AI model,
+            asks it to summarize the overnight news, and sends the result to your Telegram.
+            No cloud involvement. No API cost. Your AI works while you sleep.
+            The Morning Market Brief and Iran War Latest jobs shown below were running
+            this way — locally, privately, on schedule.
+          </p>
+          <div class="use-tags">
+            <span class="use-tag highlight">Timezone-aware <span class="new-badge">FIXED</span></span>
+            <span class="use-tag green">Telegram delivery</span>
+            <span class="use-tag green">Runs while you sleep</span>
+            <span class="use-tag">Local AI only</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="use-card">
+        <div class="use-icon" style="background: rgba(124,184,122,0.1);">🎭</div>
+        <div class="use-content">
+          <h3>Multiple Personas — One Machine, Many Minds</h3>
+          <p>
+            Create separate AI identities for different parts of your life.
+            Me-Personal uses local qwen3, casual tone, accesses your personal memories.
+            Me-Work uses a formal system prompt and sees only work-related context.
+            Me-Health uses a medical persona with access to your health journal.
+            Switch between them via Telegram PIN — one message, different mind.
+          </p>
+          <div class="use-tags">
+            <span class="use-tag highlight">Unlimited personas</span>
+            <span class="use-tag green">Per-persona memory isolation</span>
+            <span class="use-tag">Telegram PIN switch</span>
+            <span class="use-tag">Different models per persona</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="use-card">
+        <div class="use-icon" style="background: rgba(124,168,200,0.1);">⚡</div>
+        <div class="use-content">
+          <h3>Skills — Automated AI Workflows</h3>
+          <p>
+            Skills are folder-based workflow pipelines that run a sequence of AI steps
+            and deliver results to Telegram or memory. No coding required to use them.
+            Included skills: Morning Brief (news summary), Research (web search synthesis).
+            Edit the prompt files in the skill folder to customize for your needs.
+          </p>
+          <div class="use-tags">
+            <span class="use-tag highlight">No coding needed</span>
+            <span class="use-tag green">Morning Brief · Research</span>
+            <span class="use-tag">Folder-based</span>
+            <span class="use-tag">Custom prompts</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="section-divider"><span>Cloud AI when you want it — your vault stays local, always</span></div>
+
+  <!-- ── TIER 2 ── -->
+  <div class="tier-section" id="tier-2">
+    <div class="tier-header">
+      <div class="tier-badge">
+        <div class="tier-icon" style="background: rgba(124,168,200,0.1);">🚀</div>
+        <div class="tier-label">Pioneer · Tier 2</div>
+      </div>
+      <div class="tier-info">
+        <h2>Add cloud AI — <span>on your terms.</span></h2>
+        <p>
+          Your vault stays local. Your memories stay local. You just borrow cloud intelligence
+          when it's worth it — and Pathfinder tells you exactly what each call costs.
+          No assumed provider. No hidden default. You choose what runs.
+        </p>
+        <div class="tier-prereq">✓ Requires: API key for at least one cloud provider</div>
+      </div>
+    </div>
+
+    <div class="tier-cards">
+
+      <div class="use-card">
+        <div class="use-icon" style="background: rgba(124,168,200,0.1);">☁️</div>
+        <div class="use-content">
+          <h3>Cloud AI — Only What You Configure <span class="new-badge">NEW</span></h3>
+          <p>
+            Pathfinder never assumes a provider. The model picker shows only what you have
+            actually set up — installed Ollama models and providers with API keys.
+            Nothing phantom, nothing pre-selected. Add a Google API key and Gemini appears.
+            Add an Anthropic key and Claude appears. Remove the key and it disappears.
+            Your configuration, your choice.
+          </p>
+          <div class="use-tags">
+            <span class="use-tag highlight">No assumed default</span>
+            <span class="use-tag green">Gemini · Claude · GPT</span>
+            <span class="use-tag green">Gemini free tier available</span>
+            <span class="use-tag">Your API key, your bill</span>
+          </div>
+          <div class="callout">
+            <strong>Start free:</strong> Google Gemini 2.5 Flash has a generous free API tier — add your Google API key in Settings → API Keys to get cloud AI at zero cost.
+          </div>
+        </div>
+      </div>
+
+      <div class="use-card">
+        <div class="use-icon" style="background: rgba(200,169,110,0.1);">💰</div>
+        <div class="use-content">
+          <h3>Cost Transparency — See Every Penny <span class="new-badge">NEW</span></h3>
+          <p>
+            Every cloud AI call is logged in the Logs panel with an estimated cost in USD,
+            calculated from provider rates and token counts. Local model calls show
+            inference time in milliseconds and "Free." You always know what your AI
+            is costing you — without logging into a vendor dashboard.
+            New models on known providers inherit rates automatically — no configuration needed.
+          </p>
+          <div class="use-tags">
+            <span class="use-tag highlight">Per-call cost estimate</span>
+            <span class="use-tag green">Gemini ~$0.15/1M tokens</span>
+            <span class="use-tag green">Local = Free</span>
+            <span class="use-tag">Logs panel</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="use-card">
+        <div class="use-icon" style="background: rgba(124,184,122,0.1);">🔍</div>
+        <div class="use-content">
+          <h3>Web Search + AI Synthesis</h3>
+          <p>
+            Add a Serper API key and Pathfinder can search the web and synthesize results
+            through your chosen AI model. Used by scheduled jobs: the Morning Market Brief
+            pulls live market data every morning before the open. The agent loop runs up to
+            5 search-and-reason iterations automatically.
+          </p>
+          <div class="use-tags">
+            <span class="use-tag highlight">Live web data</span>
+            <span class="use-tag green">Agent loop</span>
+            <span class="use-tag">Serper API</span>
+            <span class="use-tag">5 iterations max</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="use-card">
+        <div class="use-icon" style="background: rgba(168,124,200,0.1);">🔗</div>
+        <div class="use-content">
+          <h3>n8n Automation — 400+ Integrations</h3>
+          <p>
+            Connect Pathfinder to Google Calendar, Gmail, and 400+ other services via n8n
+            — a visual workflow builder that runs on your machine. Ask "what's on my calendar
+            tomorrow?" and get an answer drawn from your actual calendar, processed locally.
+            Pathfinder sends a structured payload to n8n; n8n handles the integration;
+            results come back and the AI synthesizes them.
+          </p>
+          <div class="use-tags">
+            <span class="use-tag highlight">Google Calendar</span>
+            <span class="use-tag green">400+ integrations</span>
+            <span class="use-tag">Runs locally</span>
+            <span class="use-tag">Visual workflow builder</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="section-divider"><span>Where do I start?</span></div>
+
+  <!-- ── START TABLE ── -->
+  <div class="start-section" id="start">
+    <h2>Pick your entry point.</h2>
+    <p>You can start at any tier and move up when ready. Nothing locks you in.</p>
+
+    <div class="start-grid">
+      <div class="start-card">
+        <div class="start-card-top">
+          <div class="start-card-icon">🔑</div>
+          <div>
+            <div class="start-card-title">I want to save my passwords privately</div>
+            <div class="start-card-tier">TIER 0 · SETTLER · NO SETUP</div>
+          </div>
+        </div>
+        <p>Install Pathfinder, create your vault passphrase, go to Settings → Credentials. Import your existing CSV export from any password manager. Done.</p>
+        <a href="index.html#download" class="start-card-action">Download Pathfinder →</a>
+      </div>
+
+      <div class="start-card">
+        <div class="start-card-top">
+          <div class="start-card-icon">🤖</div>
+          <div>
+            <div class="start-card-title">I want local AI with no internet</div>
+            <div class="start-card-tier">TIER 1 · SCOUT · INSTALL OLLAMA</div>
+          </div>
+        </div>
+        <p>Install Ollama from ollama.com. Run <code>ollama pull qwen3</code> in PowerShell. Open Pathfinder, set persona to Scout tier, select qwen3. That's it — private AI, no cost, no account.</p>
+        <a href="index.html#download" class="start-card-action">Download Pathfinder →</a>
+      </div>
+
+      <div class="start-card">
+        <div class="start-card-top">
+          <div class="start-card-icon">☁️</div>
+          <div>
+            <div class="start-card-title">I want Claude or Gemini with my own key</div>
+            <div class="start-card-tier">TIER 2 · PIONEER · ADD API KEY</div>
+          </div>
+        </div>
+        <p>Install Pathfinder. Go to Settings → API Keys, add your Google or Anthropic key. Set persona to Pioneer tier. The model picker will show your configured providers. Start with Gemini — it has a free tier.</p>
+        <a href="index.html#download" class="start-card-action">Download Pathfinder →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER CTA -->
+  <div style="text-align: center; padding: 40px 0 60px;">
+    <div style="font-size: 13px; color: var(--muted); margin-bottom: 16px;">
+      Still have questions? Ask Trailhead — Pathfinder's built-in AI guide knows everything.
+    </div>
+    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+      <a href="whitepaper.html" style="
+        padding: 10px 22px; background: var(--surface);
+        border: 1px solid var(--border-hi); border-radius: 9px;
+        font-size: 13px; font-weight: 600; color: var(--muted);
+        text-decoration: none; transition: color .15s, border-color .15s;
+      " onmouseover="this.style.color='var(--text)';this.style.borderColor='var(--accent)'"
+         onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border-hi)'">
+        Read the White Paper
+      </a>
+      <a href="capabilities.html" style="
+        padding: 10px 22px; background: var(--surface);
+        border: 1px solid var(--border-hi); border-radius: 9px;
+        font-size: 13px; font-weight: 600; color: var(--muted);
+        text-decoration: none; transition: color .15s, border-color .15s;
+      " onmouseover="this.style.color='var(--text)';this.style.borderColor='var(--accent)'"
+         onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border-hi)'">
+        Pathfinder vs Cloud AI
+      </a>
+      <a href="index.html#download" style="
+        padding: 10px 22px; background: var(--accent);
+        border: 1px solid transparent; border-radius: 9px;
+        font-size: 13px; font-weight: 700; color: #111;
+        text-decoration: none;
+      ">
+        ⬇ Download Pathfinder
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="architecture.html">Architecture</a>
+      <a href="wirediagram.html">Wire Diagram</a>
+      <a href="layers.html">Layer Map</a>
+      <a href="components.html">Components</a>
+      <a href="capabilities.html">Capabilities</a>
+      <a href="openclaw.html">vs OpenClaw</a>
+      <a href="usecases.html">Use Cases</a>
+      <a href="whitepaper.html">White Paper</a>
+    </div>
+    <div class="footer-copy">
+      Free &amp; Open Source · AGPL v3 · Part of the OpenNextFrontier · Sovereignty by design.
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
